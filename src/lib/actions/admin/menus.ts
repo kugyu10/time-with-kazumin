@@ -13,6 +13,7 @@ const MenuSchema = z.object({
   zoom_account: z.enum(["A", "B"]),
   description: z.string().optional().nullable(),
   is_active: z.boolean(),
+  send_thank_you_email: z.boolean(),
 })
 
 type MenuInput = z.infer<typeof MenuSchema>
@@ -61,6 +62,7 @@ export async function createMenu(data: MenuInput) {
       zoom_account: validated.zoom_account,
       description: validated.description ?? null,
       is_active: validated.is_active,
+      send_thank_you_email: validated.send_thank_you_email,
     })
     .select()
     .single() as { data: { id: number } | null; error: { message: string } | null }
@@ -92,6 +94,7 @@ export async function updateMenu(id: number, data: MenuInput) {
       zoom_account: validated.zoom_account,
       description: validated.description ?? null,
       is_active: validated.is_active,
+      send_thank_you_email: validated.send_thank_you_email,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -152,6 +155,7 @@ export async function getMenus() {
         zoom_account: "A" | "B"
         description: string | null
         is_active: boolean
+        send_thank_you_email: boolean
         created_at: string
         updated_at: string
       }> | null

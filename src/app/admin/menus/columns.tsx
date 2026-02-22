@@ -21,6 +21,7 @@ export type Menu = {
   zoom_account: "A" | "B"
   description: string | null
   is_active: boolean
+  send_thank_you_email: boolean
   created_at: string
   updated_at: string
 }

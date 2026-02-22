@@ -32,6 +32,7 @@ const formSchema = z.object({
   zoom_account: z.enum(["A", "B"]),
   description: z.string().optional(),
   is_active: z.boolean(),
+  send_thank_you_email: z.boolean(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -45,6 +46,7 @@ type MenuFormProps = {
     zoom_account: "A" | "B"
     description: string | null
     is_active: boolean
+    send_thank_you_email: boolean
   }
   onSuccess?: () => void
   onCancel?: () => void
@@ -63,6 +65,7 @@ export function MenuForm({ menu, onSuccess, onCancel }: MenuFormProps) {
       zoom_account: menu?.zoom_account ?? "A",
       description: menu?.description ?? "",
       is_active: menu?.is_active ?? true,
+      send_thank_you_email: menu?.send_thank_you_email ?? false,
     },
   })
 
@@ -195,6 +198,27 @@ export function MenuForm({ menu, onSuccess, onCancel }: MenuFormProps) {
                 <FormLabel>有効</FormLabel>
                 <FormDescription>
                   有効にするとユーザーがこのメニューを選択できます
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="send_thank_you_email"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>サンキューメールを送信</FormLabel>
+                <FormDescription>
+                  このメニューのセッション終了後にサンキューメールを送信します
                 </FormDescription>
               </div>
             </FormItem>
