@@ -106,8 +106,8 @@ export function GuestBookingClient({ schedules }: GuestBookingClientProps) {
         return
       }
 
-      // 成功: 完了ページへリダイレクト
-      router.push(`/guest/booking/success?token=${result.guest_token}`)
+      // 成功: 完了ページへリダイレクト（guest_tokenとcancel_tokenの両方を渡す）
+      router.push(`/guest/booking/success?token=${result.guest_token}&cancel_token=${result.cancel_token}`)
     } catch (err) {
       console.error("Booking submission failed:", err)
       setError("予約処理中にエラーが発生しました")
