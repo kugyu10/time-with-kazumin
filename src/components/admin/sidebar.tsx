@@ -9,6 +9,7 @@ import {
   Users,
   ListOrdered,
   CreditCard,
+  ListChecks,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -42,6 +43,11 @@ const navItems = [
     label: "プラン管理",
     href: "/admin/plans",
     icon: CreditCard,
+  },
+  {
+    label: "タスク履歴",
+    href: "/admin/tasks",
+    icon: ListChecks,
   },
 ]
 
