@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Phase 1 - データベース基盤
+**Current focus:** Phase 2 - 認証と予約コア
 
 ## Current Position
 
-Phase: 1 of 6 (データベース基盤)
+Phase: 2 of 6 (認証と予約コア)
 Plan: 0 of 2 in current phase
 Status: Ready to plan
-Last activity: 2026-02-22 — Roadmap created with 6 phases covering 24 requirements
+Last activity: 2026-02-22 — Phase 1 完了（8テーブル、21 RLSポリシー、4 Stored Procedures）
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 17% (1/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: - min
-- Total execution time: 0.0 hours
+- Total plans completed: 2
+- Average duration: ~30 min
+- Total execution time: ~1.0 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| Phase 1 | 2/2 | ~1h | ~30min |
 
 **Recent Trend:**
-- Last 5 plans: None yet
-- Trend: Baseline
+- Last 5 plans: 01-01 ✓, 01-02 ✓
+- Trend: Baseline established
 
 *Updated after each plan completion*
 
@@ -51,10 +51,10 @@ None yet.
 
 ### Blockers/Concerns
 
-**Phase 1 Critical Risks:**
-- ポイント二重消費リスク: SELECT FOR UPDATE NOWAITの実装が必須
-- 二重予約リスク: UNIQUE INDEX制約の設計が必須
-- RLSパフォーマンス: JWT claimベースの権限チェック設計が必要
+**Phase 1 Critical Risks: ✅ 解決済み**
+- ポイント二重消費リスク: ✅ SELECT FOR UPDATE NOWAITをconsume_points()に実装
+- 二重予約リスク: ✅ EXCLUDE制約 + btree_gistで時間範囲重複を自動防止
+- RLSパフォーマンス: ✅ JWT claimをSELECTでラップしてキャッシュ化
 
 **Phase 2-4 Critical Risks:**
 - 分散トランザクション: Sagaパターン設計が外部API統合前に完了必須

@@ -12,7 +12,7 @@ Time with Kazuminは、気軽にコーチングセッションを予約できる
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: データベース基盤** - トランザクション整合性とRLSによる堅牢なDB設計
+- [x] **Phase 1: データベース基盤** - トランザクション整合性とRLSによる堅牢なDB設計
 - [ ] **Phase 2: 認証と予約コア** - Sagaパターンによる予約オーケストレーションと会員認証
 - [ ] **Phase 3: ゲスト予約体験** - 非会員向けカジュアルセッション予約フロー
 - [ ] **Phase 4: 外部API統合** - Google Calendar、Zoom、Resend統合とレート制限対策
@@ -33,8 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Supabaseローカル環境セットアップ、8テーブル定義、EXCLUDE制約による二重予約防止
-- [ ] 01-02-PLAN.md — RLSポリシー実装（JWT claimベース権限分離）、Stored Procedures（ポイント消費・返還・月次付与）
+- [x] 01-01-PLAN.md — Supabaseローカル環境セットアップ、8テーブル定義、EXCLUDE制約による二重予約防止
+- [x] 01-02-PLAN.md — RLSポリシー実装（JWT claimベース権限分離）、Stored Procedures（ポイント消費・返還・月次付与）
 
 ### Phase 2: 認証と予約コア
 **Goal**: Sagaパターンで整合性を保った会員向け予約フロー実装
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. データベース基盤 | 0/2 | Not started | - |
+| 1. データベース基盤 | 2/2 | ✅ Complete | 2026-02-22 |
 | 2. 認証と予約コア | 0/2 | Not started | - |
 | 3. ゲスト予約体験 | 0/2 | Not started | - |
 | 4. 外部API統合 | 0/3 | Not started | - |
