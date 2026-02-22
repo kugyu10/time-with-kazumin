@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Phase 5 - Admin Features
+**Current focus:** Phase 6 - Automation Tasks
 
 ## Current Position
 
-Phase: 5 of 6 (Admin Features)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase 5 Complete
-Last activity: 2026-02-22 — 05-03 完了（管理者予約管理機能）
+Phase: 6 of 6 (Automation Tasks)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-23 — 06-01 完了（自動化タスクDB基盤）
 
-Progress: [████████░░] 83% (5/6 phases complete)
+Progress: [█████████░] 92% (5.5/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: ~8 min
-- Total execution time: ~104 min
+- Total plans completed: 14
+- Average duration: ~7 min
+- Total execution time: ~109 min
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [████████░░] 83% (5/6 phases complete)
 | Phase 3 | 2/2 | ~10min | ~5min |
 | Phase 4 | 3/3 | ~22min | ~7min |
 | Phase 5 | 3/3 | ~22min | ~7min |
+| Phase 6 | 1/2 | ~5min | ~5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 ✓, 04-03 ✓, 05-01 ✓, 05-02 ✓, 05-03 ✓
-- Trend: Consistent velocity (~7min/plan)
+- Last 5 plans: 04-03 ✓, 05-01 ✓, 05-02 ✓, 05-03 ✓, 06-01 ✓
+- Trend: Excellent velocity (~5-7min/plan)
 
 *Updated after each plan completion*
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work:
 - CVE-2025-29927対策: Layout内で認証・認可を再チェック
 - Defense-in-Depth: 各Server Action内でrequireAdmin()呼び出し
 - anyキャストでSupabase型推論問題を回避（既存パターン踏襲）
+- pg_cronジョブ定義をコメント化: 本番デプロイ時にVaultシークレット設定後にuncomment
+- メール送信フラグをTIMESTAMPTZで管理: 重複防止＋送信履歴追跡を同時に実現
+- send_thank_you_emailをmeeting_menusに配置: メニューごとにサンキューメール送信をON/OFF可能
 
 ### Phase 2 Implementation Summary
 
@@ -169,8 +173,18 @@ None yet.
 - 管理者キャンセル機能（cancelBookingオーケストレーター再利用）
 - isAdminフラグで権限チェックバイパス
 
+### Phase 6 Implementation Summary (In Progress)
+
+**自動化タスクDB基盤 (06-01):**
+- task_execution_logsテーブル（タスク実行履歴記録）
+- bookingsにreminder_sent_at/thank_you_sent_atフラグ（重複送信防止）
+- meeting_menusにsend_thank_you_emailフラグ（メニューごとサンキューメールON/OFF）
+- React Emailテンプレート（BookingReminder, ThankYouEmail）
+- pg_cron拡張とジョブ定義（コメント化）
+- メニュー管理UIでサンキューメール設定可能
+
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Completed 05-03-PLAN.md (管理者予約管理機能) - Phase 5 Complete
+Last session: 2026-02-23
+Stopped at: Completed 06-01-PLAN.md (自動化タスクDB基盤)
 Resume file: None

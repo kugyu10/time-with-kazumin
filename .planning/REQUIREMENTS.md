@@ -20,7 +20,7 @@
 - [ ] **MEMBER-03**: 会員は現在のポイント残高を確認できる
 - [ ] **MEMBER-04**: 会員は自分の予約一覧を確認できる
 - [ ] **MEMBER-05**: 会員は予約をキャンセルしてポイント返還を受けられる
-- [ ] **MEMBER-06**: 会員はセッション前日にリマインダーメールを受け取れる
+- [x] **MEMBER-06**: 会員はセッション前日にリマインダーメールを受け取れる
 
 ### Admin（管理者向け）
 
@@ -34,11 +34,11 @@
 
 ### System（システム自動処理）
 
-- [ ] **SYS-01**: システムは毎月1日にプランに応じたポイントを自動付与する
+- [x] **SYS-01**: システムは毎月1日にプランに応じたポイントを自動付与する
 - [x] **SYS-02**: システムは予約確定時にZoom会議を自動生成する（メニューに応じてアカウントA/B使い分け）
 - [x] **SYS-03**: システムはキャンセル時にZoom会議を削除する
 - [x] **SYS-04**: システムは予約確認メールを送信する（ユーザー+管理者宛）
-- [ ] **SYS-05**: システムはセッション終了後30分でサンキューメールを送信する（ON/OFF可）
+- [x] **SYS-05**: システムはセッション終了後30分でサンキューメールを送信する（ON/OFF可）
 - [x] **SYS-06**: システムはキャンセル時にキャンセルメールを送信する
 - [x] **SYS-07**: システムは予約時に管理者カレンダーにイベント追加、キャンセル時に削除する
 
@@ -82,7 +82,7 @@
 | MEMBER-03 | Phase 2 | Pending |
 | MEMBER-04 | Phase 2 | Pending |
 | MEMBER-05 | Phase 2 | Pending |
-| MEMBER-06 | Phase 6 | Pending |
+| MEMBER-06 | Phase 6 | Complete |
 | ADMIN-01 | Phase 5 | Complete |
 | ADMIN-02 | Phase 4 | Complete |
 | ADMIN-03 | Phase 5 | Complete |
@@ -90,11 +90,11 @@
 | ADMIN-05 | Phase 5 | Complete |
 | ADMIN-06 | Phase 5 | Complete |
 | ADMIN-07 | Phase 5 | Complete |
-| SYS-01 | Phase 1, Phase 6 | Pending |
+| SYS-01 | Phase 1, Phase 6 | Complete |
 | SYS-02 | Phase 4 | Complete |
 | SYS-03 | Phase 4 | Complete |
 | SYS-04 | Phase 4 | Complete |
-| SYS-05 | Phase 6 | Pending |
+| SYS-05 | Phase 6 | Complete |
 | SYS-06 | Phase 4 | Complete |
 | SYS-07 | Phase 4 | Complete |
 
