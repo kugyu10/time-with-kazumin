@@ -3,11 +3,13 @@
  *
  * 空きスロット取得API（認証不要）
  * 指定日の空きスロット一覧を返す
+ * Google Calendarのbusy時間も考慮して空き判定
  */
 
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
+import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 
 // 遅延初期化用のクライアント取得関数
 function getSupabase() {
@@ -26,6 +28,24 @@ interface Slot {
   startTime: string
   endTime: string
   available: boolean
+}
+
+/**
+ * busy時間との重複チェック
+ */
+function isSlotBusy(
+  slotStart: Date,
+  slotEnd: Date,
+  busyTimes: BusyTime[]
+): boolean {
+  return busyTimes.some((busy) => {
+    const busyStart = new Date(busy.start).getTime()
+    const busyEnd = new Date(busy.end).getTime()
+    const slotStartTime = slotStart.getTime()
+    const slotEndTime = slotEnd.getTime()
+    // 重複判定: slotStart < busyEnd && slotEnd > busyStart
+    return slotStartTime < busyEnd && slotEndTime > busyStart
+  })
 }
 
 export async function GET(request: Request) {
@@ -93,6 +113,25 @@ export async function GET(request: Request) {
 
     const existingBookings = bookings || []
 
+    // Google Calendarのbusy時間を取得（15分キャッシュ）
+    // ISO形式でタイムゾーン付きの日時を指定
+    const busyTimeStart = `${date}T00:00:00+09:00`
+    const busyTimeEnd = `${date}T23:59:59+09:00`
+    let busyTimes: BusyTime[] = []
+
+    try {
+      busyTimes = await getCachedBusyTimes(busyTimeStart, busyTimeEnd)
+      console.log(
+        `[GET /api/public/slots] Got ${busyTimes.length} busy times from calendar`
+      )
+    } catch (error) {
+      // busy時間取得失敗時はログのみ、予約は可能にする
+      console.warn(
+        "[GET /api/public/slots] Failed to get busy times, continuing without calendar check:",
+        error
+      )
+    }
+
     // 30分単位でスロット生成
     const slots: Slot[] = []
     const durationMinutes = 30 // カジュアル30分セッション固定
@@ -127,15 +166,19 @@ export async function GET(request: Request) {
           return slotStart < bookingEnd && slotEnd > bookingStart
         })
 
+        // Google Calendarのbusy時間との重複チェック
+        const slotStartDate = new Date(slotStartISO)
+        const slotEndDate = new Date(slotEndISO)
+        const isBusy = isSlotBusy(slotStartDate, slotEndDate, busyTimes)
+
         // 過去日時チェック
-        const slotDateTime = new Date(slotStartISO)
-        const isPast = slotDateTime <= new Date()
+        const isPast = slotStartDate <= new Date()
 
         slots.push({
           date,
           startTime: slotStartISO,
           endTime: slotEndISO,
-          available: !isBooked && !isPast,
+          available: !isBooked && !isBusy && !isPast,
         })
       }
     }
