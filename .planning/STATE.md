@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Phase 4 - 外部API統合
+**Current focus:** Phase 5 - Admin Features
 
 ## Current Position
 
-Phase: 4 of 6 (外部API統合)
-Plan: 3 of 3 in current phase
-Status: Phase Complete
-Last activity: 2026-02-22 — 04-03 完了（キャンセルフロー拡張）
+Phase: 5 of 6 (Admin Features)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-02-22 — 05-01 完了（管理画面基盤・メニュー・プランCRUD）
 
-Progress: [██████░░░░] 60% (4/6 phases complete)
+Progress: [███████░░░] 67% (4/6 phases + 1/3 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: ~9 min
-- Total execution time: ~78 min
+- Total execution time: ~92 min
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [██████░░░░] 60% (4/6 phases complete)
 | Phase 2 | 3/3 | ~20min | ~7min |
 | Phase 3 | 2/2 | ~10min | ~5min |
 | Phase 4 | 3/3 | ~22min | ~7min |
+| Phase 5 | 1/3 | ~14min | ~14min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 ✓, 03-02 ✓, 04-01 ✓, 04-02 ✓, 04-03 ✓
-- Trend: Accelerating (infrastructure + automation)
+- Last 5 plans: 03-02 ✓, 04-01 ✓, 04-02 ✓, 04-03 ✓, 05-01 ✓
+- Trend: Accelerating (admin features buildout)
 
 *Updated after each plan completion*
 
@@ -57,6 +58,9 @@ Recent decisions affecting current work:
 - Resendメール送信: 非クリティカル扱い（失敗しても予約成功）
 - 外部API非ブロッキング: Zoom/Calendar削除失敗してもキャンセル成功
 - オーケストレーター共通化: 会員/ゲスト両方がcancelBooking()を使用
+- CVE-2025-29927対策: Layout内で認証・認可を再チェック
+- Defense-in-Depth: 各Server Action内でrequireAdmin()呼び出し
+- anyキャストでSupabase型推論問題を回避（既存パターン踏襲）
 
 ### Phase 2 Implementation Summary
 
@@ -144,8 +148,18 @@ None yet.
 - Google Calendar Rate Limit: 指数バックオフで対応済み（04-01）
 - 外部API削除失敗: 非ブロッキング処理でキャンセル成功を保証（04-03）
 
+### Phase 5 Implementation Summary (In Progress)
+
+**管理画面基盤・メニュー・プランCRUD (05-01):**
+- 管理画面共通レイアウト（認証・認可チェック付き）
+- Admin Sidebarナビゲーション
+- TanStack Table統合DataTableコンポーネント
+- メニュー（meeting_menus）CRUD Server Actions
+- プラン（plans）CRUD Server Actions
+- shadcn/ui管理画面用コンポーネント群
+
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 04-03-PLAN.md (キャンセルフロー拡張) - Phase 4 Complete
+Stopped at: Completed 05-01-PLAN.md (管理画面基盤・メニュー・プランCRUD)
 Resume file: None
