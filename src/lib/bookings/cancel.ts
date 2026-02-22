@@ -51,6 +51,7 @@ export interface CancelBookingOptions {
   isGuest?: boolean
   guestEmail?: string
   guestName?: string
+  isAdmin?: boolean // 管理者キャンセル: 権限チェックをスキップ
 }
 
 /**
@@ -74,7 +75,7 @@ export async function cancelBooking(
   userId?: string,
   options: CancelBookingOptions = {}
 ): Promise<CancelBookingResult> {
-  const { isGuest = false, guestEmail, guestName } = options
+  const { isGuest = false, guestEmail, guestName, isAdmin = false } = options
 
   try {
     // 1. 予約取得
@@ -112,8 +113,8 @@ export async function cancelBooking(
 
     const booking = data
 
-    // 2. 権限チェック
-    if (!isGuest) {
+    // 2. 権限チェック（管理者キャンセルの場合はスキップ）
+    if (!isAdmin && !isGuest) {
       // 会員キャンセル: member_plans経由でuser_id確認
       if (!booking.member_plans || booking.member_plans.user_id !== userId) {
         console.error("[cancelBooking] Unauthorized access attempt:", { bookingId, userId })
@@ -121,6 +122,7 @@ export async function cancelBooking(
       }
     }
     // ゲストの場合は呼び出し元でトークン検証済みと想定
+    // 管理者の場合は呼び出し元でrequireAdmin()済みと想定
 
     // 3. ステータス確認
     if (booking.status === "canceled") {
@@ -137,12 +139,13 @@ export async function cancelBooking(
       return { success: false, error: "過去の予約はキャンセルできません", error_code: "past_booking" }
     }
 
-    // 5. ポイント返還（会員のみ）
+    // 5. ポイント返還（会員のみ、ゲスト予約はポイント消費なし）
     const menuInfo = booking.meeting_menus
     const pointsToRefund = menuInfo?.points_required ?? 0
     let refundedPoints = 0
+    const isMemberBooking = booking.member_plan_id !== null
 
-    if (!isGuest && pointsToRefund > 0 && booking.member_plan_id) {
+    if (isMemberBooking && pointsToRefund > 0 && booking.member_plan_id) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: newBalance, error: refundError } = await (supabase.rpc as any)("refund_points", {
         p_member_plan_id: booking.member_plan_id,
