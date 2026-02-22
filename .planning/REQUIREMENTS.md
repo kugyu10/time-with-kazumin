@@ -71,9 +71,32 @@
 
 ## Traceability Matrix
 
-| REQ-ID | Phase | Success Criteria |
-|--------|-------|------------------|
-| _populated by roadmap_ | | |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| GUEST-01 | Phase 3 | Pending |
+| GUEST-02 | Phase 3 | Pending |
+| GUEST-03 | Phase 3 | Pending |
+| GUEST-04 | Phase 3 | Pending |
+| MEMBER-01 | Phase 2 | Pending |
+| MEMBER-02 | Phase 2 | Pending |
+| MEMBER-03 | Phase 2 | Pending |
+| MEMBER-04 | Phase 2 | Pending |
+| MEMBER-05 | Phase 2 | Pending |
+| MEMBER-06 | Phase 6 | Pending |
+| ADMIN-01 | Phase 5 | Pending |
+| ADMIN-02 | Phase 4 | Pending |
+| ADMIN-03 | Phase 5 | Pending |
+| ADMIN-04 | Phase 5 | Pending |
+| ADMIN-05 | Phase 5 | Pending |
+| ADMIN-06 | Phase 5 | Pending |
+| ADMIN-07 | Phase 5 | Pending |
+| SYS-01 | Phase 1, Phase 6 | Pending |
+| SYS-02 | Phase 4 | Pending |
+| SYS-03 | Phase 4 | Pending |
+| SYS-04 | Phase 4 | Pending |
+| SYS-05 | Phase 6 | Pending |
+| SYS-06 | Phase 4 | Pending |
+| SYS-07 | Phase 4 | Pending |
 
 ---
 
@@ -88,4 +111,29 @@
 | **Total v1** | **24** | |
 
 ---
+
+## Coverage Verification
+
+**Phase 1 (データベース基盤)**: 1 requirement
+- SYS-01 (部分: Stored Procedure設計のみ)
+
+**Phase 2 (認証と予約コア)**: 5 requirements
+- MEMBER-01, MEMBER-02, MEMBER-03, MEMBER-04, MEMBER-05
+
+**Phase 3 (ゲスト予約体験)**: 4 requirements
+- GUEST-01, GUEST-02, GUEST-03, GUEST-04
+
+**Phase 4 (外部API統合)**: 6 requirements
+- ADMIN-02, SYS-02, SYS-03, SYS-04, SYS-06, SYS-07
+
+**Phase 5 (管理機能)**: 6 requirements
+- ADMIN-01, ADMIN-03, ADMIN-04, ADMIN-05, ADMIN-06, ADMIN-07
+
+**Phase 6 (自動化タスク)**: 2 requirements
+- MEMBER-06, SYS-01 (完全実装), SYS-05
+
+**Total Mapped**: 24/24 ✓ (100% coverage)
+
+---
 *Generated: 2026-02-22 from PROJECT.md + research validation*
+*Updated: 2026-02-22 with phase traceability*
