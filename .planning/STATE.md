@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 3 of 6 (ゲスト予約体験)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-22 — Phase 2 完了（認証基盤、予約作成Saga、予約一覧・キャンセル）
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-02-22 — 03-01 完了（ゲスト予約基盤インフラとUI）
 
 Progress: [████░░░░░░] 33% (2/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: ~10 min
-- Total execution time: ~50 min
+- Total plans completed: 6
+- Average duration: ~9 min
+- Total execution time: ~56 min
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [████░░░░░░] 33% (2/6 phases complete)
 |-------|-------|-------|----------|
 | Phase 1 | 2/2 | ~30min | ~15min |
 | Phase 2 | 3/3 | ~20min | ~7min |
+| Phase 3 | 1/2 | ~6min | ~6min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 ✓, 01-02 ✓, 02-01 ✓, 02-02 ✓, 02-03 ✓
+- Last 5 plans: 01-02 ✓, 02-01 ✓, 02-02 ✓, 02-03 ✓, 03-01 ✓
 - Trend: Accelerating (infrastructure + automation)
 
 *Updated after each plan completion*
@@ -47,6 +48,8 @@ Recent decisions affecting current work:
 - ポイント残高をmember_plansに直接保持: 残高取得を1クエリで完結(KISS原則)
 - Next.js 15.3.3を使用: Next.js 16のTurbopackは日本語パス名でバグ発生
 - 招待制チェック: profilesテーブル存在確認で未招待ユーザーをブロック
+- 遅延初期化パターン: Supabaseクライアントをビルド時エラー回避のため関数呼び出し時に初期化
+- LRUキャッシュでレート制限: IP単独5回/h、IP+email複合3回/hの制限
 
 ### Phase 2 Implementation Summary
 
@@ -68,6 +71,16 @@ Recent decisions affecting current work:
 - 予約詳細ページ（キャンセルボタン付き）
 - キャンセル時のポイント返還（refund_points RPC）
 
+### Phase 3 Implementation Summary
+
+**ゲスト予約基盤 (03-01):**
+- service_roleクライアント（RLSバイパス、遅延初期化）
+- LRUキャッシュベースのレート制限（IP+email複合キー）
+- ゲスト入力バリデーション（validator使用）
+- GET /api/public/slots: 空きスロット取得API
+- POST /api/guest/bookings: ゲスト予約作成API
+- ゲスト予約フローUI（SlotPicker再利用）
+
 ### Pending Todos
 
 None yet.
@@ -83,13 +96,15 @@ None yet.
 - Sagaパターン: ✅ 8ステップの補償トランザクション実装
 - 冪等性: ✅ idempotency_keysテーブルで二重予約防止
 
-**Phase 3-6 Critical Risks:**
+**Phase 3 Critical Risks: 一部解決**
+- ゲストレート制限: ✅ LRUキャッシュ+IP+email複合キーで悪意あるアクセス防止
+
+**Phase 4-6 Critical Risks:**
 - OAuth期限切れ: リフレッシュトークン自動更新フローの実装必須 (Phase 4)
 - Google Calendar Rate Limit: 排他制御実装必須 (Phase 4)
-- ゲストレート制限: 悪意あるアクセス防止 (Phase 3)
 
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Phase 2 execution completed
+Stopped at: Completed 03-01-PLAN.md (ゲスト予約基盤インフラとUI)
 Resume file: None

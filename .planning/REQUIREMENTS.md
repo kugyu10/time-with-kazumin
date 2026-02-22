@@ -8,8 +8,8 @@
 
 ### Guest（ゲスト向け）
 
-- [ ] **GUEST-01**: ゲストは空き時間を日付指定で閲覧できる
-- [ ] **GUEST-02**: ゲストは会員登録なしでカジュアル30分セッションを予約できる（名前+メール入力）
+- [x] **GUEST-01**: ゲストは空き時間を日付指定で閲覧できる
+- [x] **GUEST-02**: ゲストは会員登録なしでカジュアル30分セッションを予約できる（名前+メール入力）
 - [ ] **GUEST-03**: ゲストは自分のカジュアル予約をキャンセルできる
 - [ ] **GUEST-04**: ゲストは予約完了後、1クリックでGoogleカレンダーに登録できる
 
@@ -73,8 +73,8 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| GUEST-01 | Phase 3 | Pending |
-| GUEST-02 | Phase 3 | Pending |
+| GUEST-01 | Phase 3 | Complete |
+| GUEST-02 | Phase 3 | Complete |
 | GUEST-03 | Phase 3 | Pending |
 | GUEST-04 | Phase 3 | Pending |
 | MEMBER-01 | Phase 2 | Pending |
