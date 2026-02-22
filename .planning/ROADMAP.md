@@ -63,11 +63,11 @@ Plans:
   3. ゲストは予約完了後、1クリックでGoogleカレンダーに登録できる
   4. ゲストは自分のカジュアル予約をキャンセルできる
   5. 悪意あるゲストによるレート制限攻撃が防止される
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — service_roleクライアント、レート制限、空きスロットAPI、ゲスト予約作成API、予約フローUI
+- [ ] 03-02-PLAN.md — JWTキャンセルトークン、Google Calendar URL生成、キャンセルAPI、予約完了ページ、キャンセルページ
 
 ### Phase 4: 外部API統合
 **Goal**: Google Calendar、Zoom、Resendの統合と補償処理の実装
@@ -129,7 +129,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. データベース基盤 | 2/2 | ✅ Complete | 2026-02-22 |
 | 2. 認証と予約コア | 3/3 | ✅ Complete | 2026-02-22 |
-| 3. ゲスト予約体験 | 0/2 | Not started | - |
+| 3. ゲスト予約体験 | 0/2 | In Progress | - |
 | 4. 外部API統合 | 0/3 | Not started | - |
 | 5. 管理機能 | 0/2 | Not started | - |
 | 6. 自動化タスク | 0/2 | Not started | - |
