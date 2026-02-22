@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@eslint/eslintrc": "^3.3.3",
+    "@react-email/components": "^1.0.8",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "class-variance-authority": "^0.7.1",
@@ -23,6 +24,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "resend": "^6.9.2",
     "tailwind-merge": "^3.5.0",
     "validator": "^13.15.26"
   },

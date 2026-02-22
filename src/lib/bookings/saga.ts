@@ -15,7 +15,7 @@ import {
 } from "./types"
 import { createZoomMeeting, deleteZoomMeeting } from "../integrations/zoom"
 import { addCalendarEvent, deleteCalendarEvent } from "../integrations/google-calendar"
-import { sendBookingConfirmationEmail } from "../integrations/email"
+import { sendBookingConfirmationEmailLegacy } from "../integrations/email"
 
 const MAX_RETRIES = 3
 const LOCK_CONFLICT_CODE = "55P03"
@@ -183,7 +183,7 @@ export async function createBookingSaga(
     try {
       const profile = await getProfileEmail(supabase, userId)
       if (profile?.email) {
-        await sendBookingConfirmationEmail({
+        await sendBookingConfirmationEmailLegacy({
           to: profile.email,
           bookingDetails: {
             menuName: context.menuName,
