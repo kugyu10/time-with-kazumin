@@ -3,6 +3,8 @@
  *
  * Implements the Saga pattern with compensation transactions
  * to ensure consistency across multiple operations.
+ *
+ * Phase 4: 本実装版 - Zoom, Google Calendar, Resend統合
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -15,16 +17,47 @@ import {
 } from "./types"
 import { createZoomMeeting, deleteZoomMeeting } from "../integrations/zoom"
 import { addCalendarEvent, deleteCalendarEvent } from "../integrations/google-calendar"
-import { sendBookingConfirmationEmailLegacy } from "../integrations/email"
+import { sendBookingConfirmationEmail } from "../integrations/email"
+import { generateCancelToken } from "../tokens/cancel-token"
+import { retryWithExponentialBackoff } from "@/lib/utils/retry"
 
 const MAX_RETRIES = 3
 const LOCK_CONFLICT_CODE = "55P03"
+
+// Base URL for cancel links
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
 /**
  * Sleep utility for exponential backoff
  */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Generate Google Calendar add URL
+ */
+function generateGoogleCalendarUrl(
+  title: string,
+  startTime: string,
+  endTime: string,
+  description?: string
+): string {
+  const start = new Date(startTime).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")
+  const end = new Date(endTime).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${start}/${end}`,
+    ctz: "Asia/Tokyo",
+  })
+
+  if (description) {
+    params.set("details", description)
+  }
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
 }
 
 /**
@@ -101,7 +134,7 @@ export async function createBookingSaga(
     context.pointsConsumed = true
     completedSteps.push("consume_points")
 
-    // Step 4: Create booking record (status: pending)
+    // Step 4: Create booking record (status: confirmed initially)
     console.log("[Saga] Step 4: Creating booking record")
     const bookingResult = await createBookingRecord(supabase, context)
     if (!bookingResult.success || !bookingResult.bookingId) {
@@ -143,14 +176,21 @@ export async function createBookingSaga(
       }
     }
 
-    // Step 6: Add Calendar event (mock)
+    // Step 6: Add Calendar event (with retry)
     console.log("[Saga] Step 6: Adding calendar event")
     try {
-      const calendarResult = await addCalendarEvent({
-        summary: `${context.menuName} - Kazumin`,
-        start: context.startTime,
-        end: context.endTime,
-      })
+      const calendarResult = await retryWithExponentialBackoff(
+        () =>
+          addCalendarEvent({
+            summary: `${context.menuName} - Kazumin`,
+            start: context.startTime,
+            end: context.endTime,
+            description: context.zoomJoinUrl
+              ? `Zoom: ${context.zoomJoinUrl}`
+              : undefined,
+          }),
+        { maxRetries: 3 }
+      )
       context.googleEventId = calendarResult.google_event_id
       completedSteps.push("add_calendar")
     } catch (error) {
@@ -164,7 +204,7 @@ export async function createBookingSaga(
       }
     }
 
-    // Step 7: Confirm booking (status: confirmed)
+    // Step 7: Confirm booking (update with Zoom and Calendar info)
     console.log("[Saga] Step 7: Confirming booking")
     const confirmResult = await confirmBooking(supabase, context)
     if (!confirmResult.success) {
@@ -181,16 +221,29 @@ export async function createBookingSaga(
     // Step 8: Send confirmation email (non-critical, continue on failure)
     console.log("[Saga] Step 8: Sending confirmation email")
     try {
-      const profile = await getProfileEmail(supabase, userId)
+      const profile = await getProfileData(supabase, userId)
       if (profile?.email) {
-        await sendBookingConfirmationEmailLegacy({
-          to: profile.email,
-          bookingDetails: {
-            menuName: context.menuName,
-            startTime: context.startTime,
-            endTime: context.endTime,
-            zoomJoinUrl: context.zoomJoinUrl,
-          },
+        // Generate cancel token for email
+        const cancelToken = await generateCancelToken(context.bookingId, profile.email)
+        const cancelUrl = `${APP_BASE_URL}/guest/cancel/${cancelToken}`
+
+        // Generate Google Calendar URL
+        const googleCalendarUrl = generateGoogleCalendarUrl(
+          `${context.menuName} - Kazumin`,
+          context.startTime,
+          context.endTime,
+          context.zoomJoinUrl ? `Zoom: ${context.zoomJoinUrl}` : undefined
+        )
+
+        await sendBookingConfirmationEmail({
+          userEmail: profile.email,
+          userName: profile.display_name || "ゲスト",
+          sessionTitle: context.menuName,
+          startTime: context.startTime,
+          endTime: context.endTime,
+          zoomJoinUrl: context.zoomJoinUrl || "",
+          cancelUrl,
+          googleCalendarUrl,
         })
       }
     } catch (error) {
@@ -339,10 +392,8 @@ async function createBookingRecord(
   supabase: SupabaseClient<Database>,
   context: BookingSagaContext
 ): Promise<{ success: boolean; bookingId?: number; error?: string }> {
-  // Use 'pending' status initially, change to 'confirmed' after all steps complete
-  // Note: Database has 'confirmed' | 'completed' | 'canceled' for status
-  // We'll insert as 'confirmed' since 'pending' isn't in the DB schema
-  // The final confirmation step will be a no-op in this case
+  // Use 'confirmed' status initially since 'pending' isn't in the DB schema
+  // The final confirmation step will update with Zoom/Calendar info
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("bookings")
@@ -405,15 +456,15 @@ async function confirmBooking(
 }
 
 /**
- * Get user email from profiles
+ * Get user profile data (email and display_name)
  */
-async function getProfileEmail(
+async function getProfileData(
   supabase: SupabaseClient<Database>,
   userId: string
-): Promise<{ email: string } | null> {
+): Promise<{ email: string; display_name: string | null } | null> {
   const { data } = await supabase
     .from("profiles")
-    .select("email")
+    .select("email, display_name")
     .eq("id", userId)
     .single()
 
@@ -467,28 +518,34 @@ async function compensateBookingCancel(
 }
 
 /**
- * Compensation: Delete Zoom meeting
+ * Compensation: Delete Zoom meeting (with retry)
  */
 async function compensateZoomDelete(context: BookingSagaContext): Promise<void> {
   if (!context.zoomMeetingId) return
 
   console.log("[Saga] Compensating: Deleting Zoom meeting")
   try {
-    await deleteZoomMeeting(context.zoomMeetingId, context.zoomAccountType)
+    await retryWithExponentialBackoff(
+      () => deleteZoomMeeting(context.zoomMeetingId!, context.zoomAccountType),
+      { maxRetries: 2 }
+    )
   } catch (error) {
     console.error("[Saga] Zoom deletion failed:", error)
   }
 }
 
 /**
- * Compensation: Delete Calendar event
+ * Compensation: Delete Calendar event (with retry)
  */
 async function compensateCalendarDelete(context: BookingSagaContext): Promise<void> {
   if (!context.googleEventId) return
 
   console.log("[Saga] Compensating: Deleting calendar event")
   try {
-    await deleteCalendarEvent(context.googleEventId)
+    await retryWithExponentialBackoff(
+      () => deleteCalendarEvent(context.googleEventId!),
+      { maxRetries: 2 }
+    )
   } catch (error) {
     console.error("[Saga] Calendar deletion failed:", error)
   }

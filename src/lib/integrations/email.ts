@@ -240,32 +240,3 @@ export async function sendBookingCancellationEmail(
   }
 }
 
-// Legacy interface for backward compatibility with existing saga
-export interface BookingConfirmationEmailParams {
-  to: string
-  bookingDetails: {
-    menuName: string
-    startTime: string
-    endTime: string
-    zoomJoinUrl?: string
-  }
-}
-
-/**
- * Legacy function for backward compatibility
- * Used by existing saga until it's updated in Task 3
- */
-export async function sendBookingConfirmationEmailLegacy(
-  params: BookingConfirmationEmailParams
-): Promise<{ success: boolean }> {
-  const result = await sendBookingConfirmationEmail({
-    userEmail: params.to,
-    userName: "ゲスト", // Will be updated in Task 3
-    sessionTitle: params.bookingDetails.menuName,
-    startTime: params.bookingDetails.startTime,
-    endTime: params.bookingDetails.endTime,
-    zoomJoinUrl: params.bookingDetails.zoomJoinUrl || "",
-  })
-
-  return { success: result.userEmailSent }
-}
