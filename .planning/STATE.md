@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 4 of 6 (外部API統合)
-Plan: 2 of 3 in current phase
-Status: In Progress
-Last activity: 2026-02-22 — 04-02 完了（Zoom・Calendar・Email統合）
+Plan: 3 of 3 in current phase
+Status: Phase Complete
+Last activity: 2026-02-22 — 04-03 完了（キャンセルフロー拡張）
 
-Progress: [█████░░░░░] 50% (3/6 phases complete)
+Progress: [██████░░░░] 60% (4/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: ~9 min
-- Total execution time: ~72 min
+- Total execution time: ~78 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████░░░░░] 50% (3/6 phases complete)
 | Phase 1 | 2/2 | ~30min | ~15min |
 | Phase 2 | 3/3 | ~20min | ~7min |
 | Phase 3 | 2/2 | ~10min | ~5min |
-| Phase 4 | 2/3 | ~16min | ~8min |
+| Phase 4 | 3/3 | ~22min | ~7min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 ✓, 03-01 ✓, 03-02 ✓, 04-01 ✓, 04-02 ✓
+- Last 5 plans: 03-01 ✓, 03-02 ✓, 04-01 ✓, 04-02 ✓, 04-03 ✓
 - Trend: Accelerating (infrastructure + automation)
 
 *Updated after each plan completion*
@@ -55,6 +55,8 @@ Recent decisions affecting current work:
 - pgp_sym_encrypt for OAuth tokens: PostgreSQLネイティブ暗号化でAES-256相当
 - Zoom Server-to-Server OAuth: アプリレベル認証でユーザー認証不要
 - Resendメール送信: 非クリティカル扱い（失敗しても予約成功）
+- 外部API非ブロッキング: Zoom/Calendar削除失敗してもキャンセル成功
+- オーケストレーター共通化: 会員/ゲスト両方がcancelBooking()を使用
 
 ### Phase 2 Implementation Summary
 
@@ -93,7 +95,7 @@ Recent decisions affecting current work:
 - 予約完了ページ（詳細、カレンダー追加、キャンセルリンク）
 - キャンセルページ（トークン検証、状態別表示、確認ダイアログ）
 
-### Phase 4 Implementation Summary (In Progress)
+### Phase 4 Implementation Summary (Complete)
 
 **Google Calendar OAuth統合 (04-01):**
 - oauth_tokensテーブル（pgcrypto pgp_sym_encrypt暗号化）
@@ -110,6 +112,13 @@ Recent decisions affecting current work:
 - Resend + React Email（BookingConfirmationテンプレート）
 - Sagaの本実装版拡張（Zoom/Calendar/Email統合）
 - キャンセルURL・GoogleカレンダーURL付きメール送信
+
+**キャンセルフロー拡張 (04-03):**
+- cancelBookingオーケストレーター本実装化
+- Zoom会議削除、Googleカレンダーイベント削除の統合
+- BookingCancellation React Emailテンプレート
+- 会員・ゲスト両対応キャンセルフロー
+- 外部API失敗時の非ブロッキング処理
 
 ### Pending Todos
 
@@ -130,12 +139,13 @@ None yet.
 - ゲストレート制限: LRUキャッシュ+IP+email複合キーで悪意あるアクセス防止
 - キャンセルセキュリティ: JWTキャンセルトークン（署名検証、7日有効期限）
 
-**Phase 4 Critical Risks:**
+**Phase 4 Critical Risks: RESOLVED**
 - OAuth期限切れ: 'tokens'イベントでリフレッシュ自動更新実装済み
 - Google Calendar Rate Limit: 指数バックオフで対応済み（04-01）
+- 外部API削除失敗: 非ブロッキング処理でキャンセル成功を保証（04-03）
 
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 04-02-PLAN.md (Zoom・Calendar・Email統合)
+Stopped at: Completed 04-03-PLAN.md (キャンセルフロー拡張) - Phase 4 Complete
 Resume file: None
