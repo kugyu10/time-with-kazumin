@@ -56,7 +56,7 @@ export function CancelConfirmDialog({
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive">予約をキャンセル</Button>
+        <Button className="bg-red-600 text-white hover:bg-red-700">予約をキャンセル</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

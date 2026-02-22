@@ -60,7 +60,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
       start_time,
       end_time,
       status,
-      menus (
+      meeting_menus (
         name
       )
     `)
@@ -73,7 +73,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
         start_time: string
         end_time: string
         status: string
-        menus: { name: string } | null
+        meeting_menus: { name: string } | null
       } | null
       error: { message: string } | null
     }
@@ -142,7 +142,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
           <dl className="space-y-2 text-sm">
             <div className="flex">
               <dt className="w-24 text-gray-500">メニュー</dt>
-              <dd className="text-gray-900">{booking.menus?.name || "カジュアル30分セッション"}</dd>
+              <dd className="text-gray-900">{booking.meeting_menus?.name || "カジュアル30分セッション"}</dd>
             </div>
             <div className="flex">
               <dt className="w-24 text-gray-500">日時</dt>
@@ -162,7 +162,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
         {/* Googleカレンダー追加 */}
         <div className="mb-6 flex justify-center">
           <AddToCalendarButton
-            title={`${booking.menus?.name || "カジュアル30分セッション"} with かずみん`}
+            title={`${booking.meeting_menus?.name || "カジュアル30分セッション"} with かずみん`}
             startTime={startDate}
             endTime={endDate}
             description={`予約者: ${booking.guest_name}\n\nZoomリンクはメールをご確認ください。`}

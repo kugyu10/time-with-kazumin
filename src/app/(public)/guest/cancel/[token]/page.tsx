@@ -60,7 +60,7 @@ export default async function GuestCancelPage({ params }: PageProps) {
       start_time,
       end_time,
       status,
-      menus (
+      meeting_menus (
         name
       )
     `)
@@ -73,7 +73,7 @@ export default async function GuestCancelPage({ params }: PageProps) {
         start_time: string
         end_time: string
         status: string
-        menus: { name: string } | null
+        meeting_menus: { name: string } | null
       } | null
       error: { message: string } | null
     }
@@ -188,7 +188,7 @@ export default async function GuestCancelPage({ params }: PageProps) {
     <CancelPageClient
       token={token}
       booking={{
-        menuName: booking.menus?.name || "カジュアル30分セッション",
+        menuName: booking.meeting_menus?.name || "カジュアル30分セッション",
         guestName: booking.guest_name,
         formattedDate,
         formattedTime,
