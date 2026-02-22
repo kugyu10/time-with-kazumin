@@ -10,8 +10,8 @@
 
 - [x] **GUEST-01**: ゲストは空き時間を日付指定で閲覧できる
 - [x] **GUEST-02**: ゲストは会員登録なしでカジュアル30分セッションを予約できる（名前+メール入力）
-- [ ] **GUEST-03**: ゲストは自分のカジュアル予約をキャンセルできる
-- [ ] **GUEST-04**: ゲストは予約完了後、1クリックでGoogleカレンダーに登録できる
+- [x] **GUEST-03**: ゲストは自分のカジュアル予約をキャンセルできる
+- [x] **GUEST-04**: ゲストは予約完了後、1クリックでGoogleカレンダーに登録できる
 
 ### Member（会員向け）
 
@@ -75,8 +75,8 @@
 |--------|-------|--------|
 | GUEST-01 | Phase 3 | Complete |
 | GUEST-02 | Phase 3 | Complete |
-| GUEST-03 | Phase 3 | Pending |
-| GUEST-04 | Phase 3 | Pending |
+| GUEST-03 | Phase 3 | Complete |
+| GUEST-04 | Phase 3 | Complete |
 | MEMBER-01 | Phase 2 | Pending |
 | MEMBER-02 | Phase 2 | Pending |
 | MEMBER-03 | Phase 2 | Pending |

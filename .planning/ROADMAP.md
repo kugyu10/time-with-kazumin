@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: データベース基盤** - トランザクション整合性とRLSによる堅牢なDB設計
 - [x] **Phase 2: 認証と予約コア** - Sagaパターンによる予約オーケストレーションと会員認証
-- [ ] **Phase 3: ゲスト予約体験** - 非会員向けカジュアルセッション予約フロー
+- [x] **Phase 3: ゲスト予約体験** - 非会員向けカジュアルセッション予約フロー
 - [ ] **Phase 4: 外部API統合** - Google Calendar、Zoom、Resend統合とレート制限対策
 - [ ] **Phase 5: 管理機能** - 管理者向け設定・CRUD管理画面
 - [ ] **Phase 6: 自動化タスク** - Edge Functionsによる月次ポイント付与とリマインダー
@@ -67,7 +67,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — service_roleクライアント、レート制限、空きスロットAPI、ゲスト予約作成API、予約フローUI
-- [ ] 03-02-PLAN.md — JWTキャンセルトークン、Google Calendar URL生成、キャンセルAPI、予約完了ページ、キャンセルページ
+- [x] 03-02-PLAN.md — JWTキャンセルトークン、Google Calendar URL生成、キャンセルAPI、予約完了ページ、キャンセルページ
 
 ### Phase 4: 外部API統合
 **Goal**: Google Calendar、Zoom、Resendの統合と補償処理の実装
@@ -129,7 +129,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. データベース基盤 | 2/2 | ✅ Complete | 2026-02-22 |
 | 2. 認証と予約コア | 3/3 | ✅ Complete | 2026-02-22 |
-| 3. ゲスト予約体験 | 1/2 | In Progress | - |
+| 3. ゲスト予約体験 | 2/2 | ✅ Complete | 2026-02-22 |
 | 4. 外部API統合 | 0/3 | Not started | - |
 | 5. 管理機能 | 0/2 | Not started | - |
 | 6. 自動化タスク | 0/2 | Not started | - |

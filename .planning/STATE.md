@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 3 of 6 (ゲスト予約体験)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-02-22 — 03-01 完了（ゲスト予約基盤インフラとUI）
+Plan: 2 of 2 in current phase
+Status: Complete
+Last activity: 2026-02-22 — 03-02 完了（キャンセルとカレンダー追加機能）
 
-Progress: [████░░░░░░] 33% (2/6 phases complete)
+Progress: [█████░░░░░] 50% (3/6 phases complete)
 
 ## Performance Metrics
 
@@ -29,10 +29,10 @@ Progress: [████░░░░░░] 33% (2/6 phases complete)
 |-------|-------|-------|----------|
 | Phase 1 | 2/2 | ~30min | ~15min |
 | Phase 2 | 3/3 | ~20min | ~7min |
-| Phase 3 | 1/2 | ~6min | ~6min |
+| Phase 3 | 2/2 | ~10min | ~5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 ✓, 02-01 ✓, 02-02 ✓, 02-03 ✓, 03-01 ✓
+- Last 5 plans: 02-01 ✓, 02-02 ✓, 02-03 ✓, 03-01 ✓, 03-02 ✓
 - Trend: Accelerating (infrastructure + automation)
 
 *Updated after each plan completion*
@@ -50,6 +50,7 @@ Recent decisions affecting current work:
 - 招待制チェック: profilesテーブル存在確認で未招待ユーザーをブロック
 - 遅延初期化パターン: Supabaseクライアントをビルド時エラー回避のため関数呼び出し時に初期化
 - LRUキャッシュでレート制限: IP単独5回/h、IP+email複合3回/hの制限
+- jose for JWT: ESM-native、Edge-compatible、7日間のキャンセルトークン有効期限
 
 ### Phase 2 Implementation Summary
 
@@ -81,6 +82,13 @@ Recent decisions affecting current work:
 - POST /api/guest/bookings: ゲスト予約作成API
 - ゲスト予約フローUI（SlotPicker再利用）
 
+**キャンセルとカレンダー追加 (03-02):**
+- JWTキャンセルトークン（jose、HS256、7日有効期限）
+- Googleカレンダー追加URL生成
+- DELETE /api/guest/cancel/[token]: キャンセルAPI
+- 予約完了ページ（詳細、カレンダー追加、キャンセルリンク）
+- キャンセルページ（トークン検証、状態別表示、確認ダイアログ）
+
 ### Pending Todos
 
 None yet.
@@ -96,8 +104,9 @@ None yet.
 - Sagaパターン: ✅ 8ステップの補償トランザクション実装
 - 冪等性: ✅ idempotency_keysテーブルで二重予約防止
 
-**Phase 3 Critical Risks: 一部解決**
+**Phase 3 Critical Risks: ✅ 解決済み**
 - ゲストレート制限: ✅ LRUキャッシュ+IP+email複合キーで悪意あるアクセス防止
+- キャンセルセキュリティ: ✅ JWTキャンセルトークン（署名検証、7日有効期限）
 
 **Phase 4-6 Critical Risks:**
 - OAuth期限切れ: リフレッシュトークン自動更新フローの実装必須 (Phase 4)
@@ -106,5 +115,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 03-01-PLAN.md (ゲスト予約基盤インフラとUI)
+Stopped at: Completed 03-02-PLAN.md (キャンセルとカレンダー追加機能) - Phase 3完了
 Resume file: None
