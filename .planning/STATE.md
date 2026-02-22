@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 6 of 6 (Automation Tasks)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-02-23 — 06-01 完了（自動化タスクDB基盤）
+Plan: 2 of 2 in current phase
+Status: Complete
+Last activity: 2026-02-23 — 06-02 完了（Edge Functions自動化タスク実装）
 
-Progress: [█████████░] 92% (5.5/6 phases complete)
+Progress: [██████████] 100% (6/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: ~7 min
-- Total execution time: ~109 min
+- Total execution time: ~115 min
 
 **By Phase:**
 
@@ -32,13 +32,14 @@ Progress: [█████████░] 92% (5.5/6 phases complete)
 | Phase 3 | 2/2 | ~10min | ~5min |
 | Phase 4 | 3/3 | ~22min | ~7min |
 | Phase 5 | 3/3 | ~22min | ~7min |
-| Phase 6 | 1/2 | ~5min | ~5min |
+| Phase 6 | 2/2 | ~11min | ~5.5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 ✓, 05-01 ✓, 05-02 ✓, 05-03 ✓, 06-01 ✓
+- Last 5 plans: 05-01 ✓, 05-02 ✓, 05-03 ✓, 06-01 ✓, 06-02 ✓
 - Trend: Excellent velocity (~5-7min/plan)
 
 *Updated after each plan completion*
+| Phase 06 P02 | 6min | 4 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - pg_cronジョブ定義をコメント化: 本番デプロイ時にVaultシークレット設定後にuncomment
 - メール送信フラグをTIMESTAMPTZで管理: 重複防止＋送信履歴追跡を同時に実現
 - send_thank_you_emailをmeeting_menusに配置: メニューごとにサンキューメール送信をON/OFF可能
+- [Phase 06]: Edge FunctionsからResend API直接呼び出し: Next.js経由せずDeno runtimeから直接fetch
+- [Phase 06]: HTMLテンプレート手動生成: React Email renderはサーバーサイド専用のためEdge Function内でHTML文字列を直接生成
 
 ### Phase 2 Implementation Summary
 
@@ -173,7 +176,7 @@ None yet.
 - 管理者キャンセル機能（cancelBookingオーケストレーター再利用）
 - isAdminフラグで権限チェックバイパス
 
-### Phase 6 Implementation Summary (In Progress)
+### Phase 6 Implementation Summary (Complete)
 
 **自動化タスクDB基盤 (06-01):**
 - task_execution_logsテーブル（タスク実行履歴記録）
@@ -183,8 +186,15 @@ None yet.
 - pg_cron拡張とジョブ定義（コメント化）
 - メニュー管理UIでサンキューメール設定可能
 
+**Edge Functions自動化タスク実装 (06-02):**
+- monthly-point-grant Edge Function（月次ポイント付与、冪等性チェック付き）
+- check-reminder-emails Edge Function（24時間前リマインダー自動送信）
+- check-thank-you-emails Edge Function（セッション終了後サンキューメール自動送信）
+- タスク実行履歴管理画面（/admin/tasks、フィルタ機能付き）
+- Resend API直接呼び出し（Deno runtime対応）
+
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 06-01-PLAN.md (自動化タスクDB基盤)
+Stopped at: Completed 06-02-PLAN.md (Edge Functions自動化タスク実装)
 Resume file: None
