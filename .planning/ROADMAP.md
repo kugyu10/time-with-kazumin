@@ -30,11 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. 同じ時間帯への二重予約がデータベース制約によって自動的に防止される
   3. ゲスト・会員・管理者が適切な権限でデータアクセスできる(RLS有効)
   4. マイグレーションをUP/DOWNの両方向で実行でき、CI/CD自動化が可能
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Supabaseローカル環境セットアップ、8テーブル定義、EXCLUDE制約による二重予約防止
+- [ ] 01-02-PLAN.md — RLSポリシー実装（JWT claimベース権限分離）、Stored Procedures（ポイント消費・返還・月次付与）
 
 ### Phase 2: 認証と予約コア
 **Goal**: Sagaパターンで整合性を保った会員向け予約フロー実装
