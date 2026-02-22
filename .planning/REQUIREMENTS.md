@@ -35,12 +35,12 @@
 ### System（システム自動処理）
 
 - [ ] **SYS-01**: システムは毎月1日にプランに応じたポイントを自動付与する
-- [ ] **SYS-02**: システムは予約確定時にZoom会議を自動生成する（メニューに応じてアカウントA/B使い分け）
+- [x] **SYS-02**: システムは予約確定時にZoom会議を自動生成する（メニューに応じてアカウントA/B使い分け）
 - [ ] **SYS-03**: システムはキャンセル時にZoom会議を削除する
-- [ ] **SYS-04**: システムは予約確認メールを送信する（ユーザー+管理者宛）
+- [x] **SYS-04**: システムは予約確認メールを送信する（ユーザー+管理者宛）
 - [ ] **SYS-05**: システムはセッション終了後30分でサンキューメールを送信する（ON/OFF可）
 - [ ] **SYS-06**: システムはキャンセル時にキャンセルメールを送信する
-- [ ] **SYS-07**: システムは予約時に管理者カレンダーにイベント追加、キャンセル時に削除する
+- [x] **SYS-07**: システムは予約時に管理者カレンダーにイベント追加、キャンセル時に削除する
 
 ---
 
@@ -91,12 +91,12 @@
 | ADMIN-06 | Phase 5 | Pending |
 | ADMIN-07 | Phase 5 | Pending |
 | SYS-01 | Phase 1, Phase 6 | Pending |
-| SYS-02 | Phase 4 | Pending |
+| SYS-02 | Phase 4 | Complete |
 | SYS-03 | Phase 4 | Pending |
-| SYS-04 | Phase 4 | Pending |
+| SYS-04 | Phase 4 | Complete |
 | SYS-05 | Phase 6 | Pending |
 | SYS-06 | Phase 4 | Pending |
-| SYS-07 | Phase 4 | Pending |
+| SYS-07 | Phase 4 | Complete |
 
 ---
 

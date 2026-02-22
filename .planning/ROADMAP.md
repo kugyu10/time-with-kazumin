@@ -84,7 +84,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — OAuth基盤、Google Calendar FreeBusy統合、空きスロットAPI拡張
-- [ ] 04-02-PLAN.md — Zoom Server-to-Server OAuth、Resend + React Email、Saga本実装
+- [x] 04-02-PLAN.md — Zoom Server-to-Server OAuth、Resend + React Email、Saga本実装
 - [ ] 04-03-PLAN.md — キャンセル処理（Zoom削除、Calendar削除、キャンセルメール）
 
 ### Phase 5: 管理機能
@@ -130,6 +130,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. データベース基盤 | 2/2 | ✅ Complete | 2026-02-22 |
 | 2. 認証と予約コア | 3/3 | ✅ Complete | 2026-02-22 |
 | 3. ゲスト予約体験 | 2/2 | ✅ Complete | 2026-02-22 |
-| 4. 外部API統合 | 1/3 | In Progress | - |
+| 4. 外部API統合 | 2/3 | In Progress | - |
 | 5. 管理機能 | 0/2 | Not started | - |
 | 6. 自動化タスク | 0/2 | Not started | - |

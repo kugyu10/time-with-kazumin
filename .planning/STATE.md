@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 4 of 6 (外部API統合)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-02-22 — 04-01 完了（Google Calendar OAuth統合）
+Last activity: 2026-02-22 — 04-02 完了（Zoom・Calendar・Email統合）
 
 Progress: [█████░░░░░] 50% (3/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: ~9 min
-- Total execution time: ~63 min
+- Total execution time: ~72 min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████░░░░░] 50% (3/6 phases complete)
 | Phase 1 | 2/2 | ~30min | ~15min |
 | Phase 2 | 3/3 | ~20min | ~7min |
 | Phase 3 | 2/2 | ~10min | ~5min |
-| Phase 4 | 1/3 | ~7min | ~7min |
+| Phase 4 | 2/3 | ~16min | ~8min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 ✓, 02-03 ✓, 03-01 ✓, 03-02 ✓, 04-01 ✓
+- Last 5 plans: 02-03 ✓, 03-01 ✓, 03-02 ✓, 04-01 ✓, 04-02 ✓
 - Trend: Accelerating (infrastructure + automation)
 
 *Updated after each plan completion*
@@ -53,6 +53,8 @@ Recent decisions affecting current work:
 - LRUキャッシュでレート制限: IP単独5回/h、IP+email複合3回/hの制限
 - jose for JWT: ESM-native、Edge-compatible、7日間のキャンセルトークン有効期限
 - pgp_sym_encrypt for OAuth tokens: PostgreSQLネイティブ暗号化でAES-256相当
+- Zoom Server-to-Server OAuth: アプリレベル認証でユーザー認証不要
+- Resendメール送信: 非クリティカル扱い（失敗しても予約成功）
 
 ### Phase 2 Implementation Summary
 
@@ -102,6 +104,13 @@ Recent decisions affecting current work:
 - 指数バックオフリトライユーティリティ
 - 空きスロットAPIがbusy時間を反映
 
+**Zoom・Calendar・Email統合 (04-02):**
+- Zoom Server-to-Server OAuth（アカウントA/B対応）
+- meeting_menus.zoom_accountカラムでアカウント切り替え
+- Resend + React Email（BookingConfirmationテンプレート）
+- Sagaの本実装版拡張（Zoom/Calendar/Email統合）
+- キャンセルURL・GoogleカレンダーURL付きメール送信
+
 ### Pending Todos
 
 None yet.
@@ -128,5 +137,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 04-01-PLAN.md (Google Calendar OAuth統合)
+Stopped at: Completed 04-02-PLAN.md (Zoom・Calendar・Email統合)
 Resume file: None
