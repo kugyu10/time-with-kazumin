@@ -2,12 +2,14 @@
  * DELETE /api/guest/cancel/[token]
  *
  * ゲストキャンセルAPI
- * JWTトークンで認証し、予約をキャンセル
+ * JWTトークンで認証し、cancelBookingオーケストレーターで
+ * Zoom/Calendar削除とメール送信を含むキャンセルを実行
  */
 
 import { NextResponse } from "next/server"
 import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { verifyCancelToken } from "@/lib/tokens/cancel-token"
+import { cancelBooking } from "@/lib/bookings/cancel"
 
 interface RouteParams {
   params: Promise<{ token: string }>
@@ -30,15 +32,21 @@ export async function DELETE(
 
   const { booking_id, email } = payload
 
-  // 2. 予約を取得
+  // 2. 予約を取得（メールアドレス照合のため）
   const supabase = getSupabaseServiceRole()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: booking, error: fetchError } = await (supabase as any)
     .from("bookings")
-    .select("id, guest_email, status, start_time")
+    .select("id, guest_email, guest_name, status, start_time")
     .eq("id", booking_id)
     .single() as {
-      data: { id: number; guest_email: string; status: string; start_time: string } | null
+      data: {
+        id: number
+        guest_email: string | null
+        guest_name: string | null
+        status: string
+        start_time: string
+      } | null
       error: { message: string } | null
     }
 
@@ -58,35 +66,24 @@ export async function DELETE(
     )
   }
 
-  // 4. 既にキャンセル済みかチェック
-  if (booking.status === "canceled") {
-    return NextResponse.json(
-      { error: "この予約は既にキャンセルされています" },
-      { status: 400 }
-    )
-  }
+  // 4. cancelBookingオーケストレーターでキャンセル実行
+  // (Zoom/Calendar削除、メール送信を含む)
+  const result = await cancelBooking(booking_id, supabase, undefined, {
+    isGuest: true,
+    guestEmail: booking.guest_email || undefined,
+    guestName: booking.guest_name || undefined,
+  })
 
-  // 5. 予約開始時刻を過ぎていないかチェック
-  const startTime = new Date(booking.start_time)
-  if (startTime < new Date()) {
-    return NextResponse.json(
-      { error: "予約開始時刻を過ぎているためキャンセルできません" },
-      { status: 400 }
-    )
-  }
+  if (!result.success) {
+    const statusCode =
+      result.error_code === "not_found" ? 404 :
+      result.error_code === "already_canceled" ? 400 :
+      result.error_code === "past_booking" ? 400 :
+      500
 
-  // 6. キャンセル実行
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: updateError } = await (supabase as any)
-    .from("bookings")
-    .update({ status: "canceled" })
-    .eq("id", booking_id) as { error: { message: string } | null }
-
-  if (updateError) {
-    console.error("[DELETE /api/guest/cancel] Update error:", updateError)
     return NextResponse.json(
-      { error: "キャンセル処理に失敗しました" },
-      { status: 500 }
+      { error: result.error },
+      { status: statusCode }
     )
   }
 
