@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: 認証と予約コア** - Sagaパターンによる予約オーケストレーションと会員認証
 - [x] **Phase 3: ゲスト予約体験** - 非会員向けカジュアルセッション予約フロー
 - [x] **Phase 4: 外部API統合** - Google Calendar、Zoom、Resend統合とレート制限対策
-- [ ] **Phase 5: 管理機能** - 管理者向け設定・CRUD管理画面
+- [x] **Phase 5: 管理機能** - 管理者向け設定・CRUD管理画面
 - [ ] **Phase 6: 自動化タスク** - Edge Functionsによる月次ポイント付与とリマインダー
 
 ## Phase Details
@@ -102,8 +102,8 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — 管理画面基盤（レイアウト、サイドバー、DataTable）、メニューCRUD、プランCRUD
-- [ ] 05-02-PLAN.md — 営業時間管理（曜日別設定、祝日パターン）
-- [ ] 05-03-PLAN.md — 予約管理、会員管理、ポイント調整
+- [x] 05-02-PLAN.md — 営業時間管理、会員管理、ポイント調整
+- [x] 05-03-PLAN.md — 予約管理（一覧・ステータス変更・キャンセル）
 
 ### Phase 6: 自動化タスク
 **Goal**: Edge Functionsによる月次ポイント付与、リマインダー、サンキューメール自動化
@@ -132,5 +132,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. 認証と予約コア | 3/3 | ✅ Complete | 2026-02-22 |
 | 3. ゲスト予約体験 | 2/2 | ✅ Complete | 2026-02-22 |
 | 4. 外部API統合 | 3/3 | ✅ Complete | 2026-02-22 |
-| 5. 管理機能 | 1/3 | In progress | - |
+| 5. 管理機能 | 3/3 | ✅ Complete | 2026-02-22 |
 | 6. 自動化タスク | 0/2 | Not started | - |

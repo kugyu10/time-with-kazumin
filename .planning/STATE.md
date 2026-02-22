@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 5 of 6 (Admin Features)
-Plan: 1 of 3 in current phase
-Status: In Progress
-Last activity: 2026-02-22 — 05-01 完了（管理画面基盤・メニュー・プランCRUD）
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: Phase 5 Complete
+Last activity: 2026-02-22 — 05-03 完了（管理者予約管理機能）
 
-Progress: [███████░░░] 67% (4/6 phases + 1/3 plans complete)
+Progress: [████████░░] 83% (5/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: ~9 min
-- Total execution time: ~92 min
+- Total plans completed: 13
+- Average duration: ~8 min
+- Total execution time: ~104 min
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [███████░░░] 67% (4/6 phases + 1/3 plans complete)
 | Phase 2 | 3/3 | ~20min | ~7min |
 | Phase 3 | 2/2 | ~10min | ~5min |
 | Phase 4 | 3/3 | ~22min | ~7min |
-| Phase 5 | 1/3 | ~14min | ~14min |
+| Phase 5 | 3/3 | ~22min | ~7min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 ✓, 04-01 ✓, 04-02 ✓, 04-03 ✓, 05-01 ✓
-- Trend: Accelerating (admin features buildout)
+- Last 5 plans: 04-02 ✓, 04-03 ✓, 05-01 ✓, 05-02 ✓, 05-03 ✓
+- Trend: Consistent velocity (~7min/plan)
 
 *Updated after each plan completion*
 
@@ -148,7 +148,7 @@ None yet.
 - Google Calendar Rate Limit: 指数バックオフで対応済み（04-01）
 - 外部API削除失敗: 非ブロッキング処理でキャンセル成功を保証（04-03）
 
-### Phase 5 Implementation Summary (In Progress)
+### Phase 5 Implementation Summary (Complete)
 
 **管理画面基盤・メニュー・プランCRUD (05-01):**
 - 管理画面共通レイアウト（認証・認可チェック付き）
@@ -158,8 +158,19 @@ None yet.
 - プラン（plans）CRUD Server Actions
 - shadcn/ui管理画面用コンポーネント群
 
+**営業時間設定、会員管理、ポイント調整 (05-02):**
+- 営業時間設定UI（週間スケジュール）
+- 会員一覧・検索・編集機能
+- ポイント手動調整機能（manual_adjust_points RPC）
+
+**管理者予約管理機能 (05-03):**
+- 予約一覧・フィルタ機能（会員/ゲスト両方表示）
+- ステータス変更（楽観的更新、useOptimistic）
+- 管理者キャンセル機能（cancelBookingオーケストレーター再利用）
+- isAdminフラグで権限チェックバイパス
+
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 05-01-PLAN.md (管理画面基盤・メニュー・プランCRUD)
+Stopped at: Completed 05-03-PLAN.md (管理者予約管理機能) - Phase 5 Complete
 Resume file: None
