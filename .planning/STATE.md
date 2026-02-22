@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Phase 3 - ゲスト予約体験
+**Current focus:** Phase 4 - 外部API統合
 
 ## Current Position
 
-Phase: 3 of 6 (ゲスト予約体験)
-Plan: 2 of 2 in current phase
-Status: Complete
-Last activity: 2026-02-22 — 03-02 完了（キャンセルとカレンダー追加機能）
+Phase: 4 of 6 (外部API統合)
+Plan: 1 of 3 in current phase
+Status: In Progress
+Last activity: 2026-02-22 — 04-01 完了（Google Calendar OAuth統合）
 
 Progress: [█████░░░░░] 50% (3/6 phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: ~9 min
-- Total execution time: ~56 min
+- Total execution time: ~63 min
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [█████░░░░░] 50% (3/6 phases complete)
 | Phase 1 | 2/2 | ~30min | ~15min |
 | Phase 2 | 3/3 | ~20min | ~7min |
 | Phase 3 | 2/2 | ~10min | ~5min |
+| Phase 4 | 1/3 | ~7min | ~7min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 ✓, 02-02 ✓, 02-03 ✓, 03-01 ✓, 03-02 ✓
+- Last 5 plans: 02-02 ✓, 02-03 ✓, 03-01 ✓, 03-02 ✓, 04-01 ✓
 - Trend: Accelerating (infrastructure + automation)
 
 *Updated after each plan completion*
@@ -51,6 +52,7 @@ Recent decisions affecting current work:
 - 遅延初期化パターン: Supabaseクライアントをビルド時エラー回避のため関数呼び出し時に初期化
 - LRUキャッシュでレート制限: IP単独5回/h、IP+email複合3回/hの制限
 - jose for JWT: ESM-native、Edge-compatible、7日間のキャンセルトークン有効期限
+- pgp_sym_encrypt for OAuth tokens: PostgreSQLネイティブ暗号化でAES-256相当
 
 ### Phase 2 Implementation Summary
 
@@ -89,31 +91,42 @@ Recent decisions affecting current work:
 - 予約完了ページ（詳細、カレンダー追加、キャンセルリンク）
 - キャンセルページ（トークン検証、状態別表示、確認ダイアログ）
 
+### Phase 4 Implementation Summary (In Progress)
+
+**Google Calendar OAuth統合 (04-01):**
+- oauth_tokensテーブル（pgcrypto pgp_sym_encrypt暗号化）
+- Google OAuth 2.0認証フロー（access_type: offline, prompt: consent）
+- 'tokens'イベントでリフレッシュトークン自動更新
+- FreeBusy APIでbusy時間取得
+- 15分TTLキャッシュでAPI呼び出し削減
+- 指数バックオフリトライユーティリティ
+- 空きスロットAPIがbusy時間を反映
+
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
 
-**Phase 1 Critical Risks: ✅ 解決済み**
-- ポイント二重消費リスク: ✅ SELECT FOR UPDATE NOWAITをconsume_points()に実装
-- 二重予約リスク: ✅ EXCLUDE制約 + btree_gistで時間範囲重複を自動防止
-- RLSパフォーマンス: ✅ JWT claimをSELECTでラップしてキャッシュ化
+**Phase 1 Critical Risks: RESOLVED**
+- ポイント二重消費リスク: SELECT FOR UPDATE NOWAITをconsume_points()に実装
+- 二重予約リスク: EXCLUDE制約 + btree_gistで時間範囲重複を自動防止
+- RLSパフォーマンス: JWT claimをSELECTでラップしてキャッシュ化
 
-**Phase 2 Critical Risks: ✅ 解決済み**
-- Sagaパターン: ✅ 8ステップの補償トランザクション実装
-- 冪等性: ✅ idempotency_keysテーブルで二重予約防止
+**Phase 2 Critical Risks: RESOLVED**
+- Sagaパターン: 8ステップの補償トランザクション実装
+- 冪等性: idempotency_keysテーブルで二重予約防止
 
-**Phase 3 Critical Risks: ✅ 解決済み**
-- ゲストレート制限: ✅ LRUキャッシュ+IP+email複合キーで悪意あるアクセス防止
-- キャンセルセキュリティ: ✅ JWTキャンセルトークン（署名検証、7日有効期限）
+**Phase 3 Critical Risks: RESOLVED**
+- ゲストレート制限: LRUキャッシュ+IP+email複合キーで悪意あるアクセス防止
+- キャンセルセキュリティ: JWTキャンセルトークン（署名検証、7日有効期限）
 
-**Phase 4-6 Critical Risks:**
-- OAuth期限切れ: リフレッシュトークン自動更新フローの実装必須 (Phase 4)
-- Google Calendar Rate Limit: 排他制御実装必須 (Phase 4)
+**Phase 4 Critical Risks:**
+- OAuth期限切れ: 'tokens'イベントでリフレッシュ自動更新実装済み
+- Google Calendar Rate Limit: 指数バックオフで対応済み（04-01）
 
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 03-02-PLAN.md (キャンセルとカレンダー追加機能) - Phase 3完了
+Stopped at: Completed 04-01-PLAN.md (Google Calendar OAuth統合)
 Resume file: None

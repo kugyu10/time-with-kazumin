@@ -25,7 +25,7 @@
 ### Admin（管理者向け）
 
 - [ ] **ADMIN-01**: 管理者は曜日別の営業時間を設定できる（祝日は別パターン）
-- [ ] **ADMIN-02**: 管理者はGoogleカレンダーと同期して空き時間を自動反映できる
+- [x] **ADMIN-02**: 管理者はGoogleカレンダーと同期して空き時間を自動反映できる
 - [ ] **ADMIN-03**: 管理者は全予約一覧を確認・ステータス変更・キャンセルできる
 - [ ] **ADMIN-04**: 管理者は会員を招待・登録・退会させることができる
 - [ ] **ADMIN-05**: 管理者は会員のポイントを手動で付与/減算できる
@@ -84,7 +84,7 @@
 | MEMBER-05 | Phase 2 | Pending |
 | MEMBER-06 | Phase 6 | Pending |
 | ADMIN-01 | Phase 5 | Pending |
-| ADMIN-02 | Phase 4 | Pending |
+| ADMIN-02 | Phase 4 | Complete |
 | ADMIN-03 | Phase 5 | Pending |
 | ADMIN-04 | Phase 5 | Pending |
 | ADMIN-05 | Phase 5 | Pending |
