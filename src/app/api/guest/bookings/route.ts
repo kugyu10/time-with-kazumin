@@ -9,6 +9,7 @@ import { NextResponse } from "next/server"
 import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { checkGuestRateLimit } from "@/lib/rate-limit/guest-limiter"
 import { validateGuestBooking } from "@/lib/validation/guest"
+import { generateCancelToken } from "@/lib/tokens/cancel-token"
 import { randomUUID } from "crypto"
 
 // カジュアル30分セッションのメニューID（固定）
@@ -107,11 +108,15 @@ export async function POST(request: Request) {
       )
     }
 
+    // キャンセルトークン生成
+    const cancelToken = await generateCancelToken(data.id, email)
+
     // 成功
     return NextResponse.json(
       {
         booking_id: data.id,
         guest_token: guestToken,
+        cancel_token: cancelToken,
       },
       {
         status: 201,
