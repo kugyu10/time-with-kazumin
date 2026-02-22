@@ -39,6 +39,8 @@ export interface BookingSagaContext {
   bookingId?: number
   zoomMeetingId?: string
   zoomJoinUrl?: string
+  zoomStartUrl?: string
+  zoomAccountType?: "A" | "B"
   googleEventId?: string
 }
 

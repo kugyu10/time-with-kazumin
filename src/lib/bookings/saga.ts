@@ -116,16 +116,21 @@ export async function createBookingSaga(
     context.bookingId = bookingResult.bookingId
     completedSteps.push("create_booking")
 
-    // Step 5: Create Zoom meeting (mock)
+    // Step 5: Create Zoom meeting
     console.log("[Saga] Step 5: Creating Zoom meeting")
     try {
+      // Get zoom_account from menu (default to 'A')
+      const zoomAccount = await getMenuZoomAccount(supabase, context.menuId)
       const zoomResult = await createZoomMeeting({
         topic: `${context.menuName} - Kazumin`,
         start_time: context.startTime,
         duration: context.menuDuration,
+        accountType: zoomAccount,
       })
+      context.zoomAccountType = zoomAccount
       context.zoomMeetingId = zoomResult.zoom_meeting_id
       context.zoomJoinUrl = zoomResult.zoom_join_url
+      context.zoomStartUrl = zoomResult.zoom_start_url
       completedSteps.push("create_zoom")
     } catch (error) {
       console.error("[Saga] Zoom meeting creation failed:", error)
@@ -469,7 +474,7 @@ async function compensateZoomDelete(context: BookingSagaContext): Promise<void> 
 
   console.log("[Saga] Compensating: Deleting Zoom meeting")
   try {
-    await deleteZoomMeeting(context.zoomMeetingId)
+    await deleteZoomMeeting(context.zoomMeetingId, context.zoomAccountType)
   } catch (error) {
     console.error("[Saga] Zoom deletion failed:", error)
   }
@@ -517,4 +522,21 @@ async function compensateAll(
       // check_slot and validate_menu don't need compensation
     }
   }
+}
+
+/**
+ * Get zoom_account setting from menu
+ */
+async function getMenuZoomAccount(
+  supabase: SupabaseClient<Database>,
+  menuId: number
+): Promise<"A" | "B"> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from("meeting_menus")
+    .select("zoom_account")
+    .eq("id", menuId)
+    .single()
+
+  return (data?.zoom_account as "A" | "B") || "A"
 }
