@@ -115,11 +115,11 @@ Plans:
   3. セッション終了後30分でサンキューメールが自動送信される(ON/OFF設定可能)
   4. 自動化タスクが失敗した場合、管理者に通知される
   5. 自動化タスクの実行履歴が管理画面で確認できる
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md — DB基盤（task_execution_logs、カラム追加、pg_cronジョブ）、メールテンプレート、メニュー設定拡張
+- [ ] 06-02-PLAN.md — Edge Functions（月次ポイント、リマインダー、サンキュー）、タスク履歴管理画面
 
 ## Progress
 
@@ -133,4 +133,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. ゲスト予約体験 | 2/2 | ✅ Complete | 2026-02-22 |
 | 4. 外部API統合 | 3/3 | ✅ Complete | 2026-02-22 |
 | 5. 管理機能 | 3/3 | ✅ Complete | 2026-02-22 |
-| 6. 自動化タスク | 0/2 | Not started | - |
+| 6. 自動化タスク | 0/2 | In Progress | - |
