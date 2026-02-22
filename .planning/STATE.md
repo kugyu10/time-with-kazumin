@@ -10,28 +10,29 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 ## Current Position
 
 Phase: 2 of 6 (認証と予約コア)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-02-22 — Phase 1 完了（8テーブル、21 RLSポリシー、4 Stored Procedures）
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-22 — Plan 02-01 完了（認証基盤、Next.js 15 + Supabase Auth）
 
-Progress: [██░░░░░░░░] 17% (1/6 phases complete)
+Progress: [███░░░░░░░] 25% (1/6 phases, 1/3 plans in phase 2)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~30 min
-- Total execution time: ~1.0 hours
+- Total plans completed: 3
+- Average duration: ~25 min
+- Total execution time: ~1.25 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | Phase 1 | 2/2 | ~1h | ~30min |
+| Phase 2 | 1/3 | ~10min | ~10min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 ✓, 01-02 ✓
-- Trend: Baseline established
+- Last 5 plans: 01-01 ✓, 01-02 ✓, 02-01 ✓
+- Trend: Accelerating (infrastructure + automation)
 
 *Updated after each plan completion*
 
@@ -44,6 +45,8 @@ Recent decisions affecting current work:
 
 - Supabase選択: PostgreSQLトランザクション整合性でポイント管理を担保、Auth+Edge Functions統合
 - ポイント残高をmember_plansに直接保持: 残高取得を1クエリで完結(KISS原則)
+- Next.js 15.3.3を使用: Next.js 16のTurbopackは日本語パス名でバグ発生
+- 招待制チェック: profilesテーブル存在確認で未招待ユーザーをブロック
 
 ### Pending Todos
 
@@ -63,6 +66,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-22 (初期化)
-Stopped at: Roadmap creation completed
+Last session: 2026-02-22
+Stopped at: Completed 02-01-PLAN.md (認証基盤)
 Resume file: None

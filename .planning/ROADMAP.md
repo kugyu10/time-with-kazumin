@@ -49,7 +49,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Supabase Auth統合（Google OAuth＋メール認証）、認証ガード、招待制チェック
+- [x] 02-01-PLAN.md — Supabase Auth統合（Google OAuth＋メール認証）、認証ガード、招待制チェック
 - [ ] 02-02-PLAN.md — Sagaパターンによる予約作成フロー（モック版）、冪等性キー、ポイント残高表示
 - [ ] 02-03-PLAN.md — 予約一覧・詳細表示、キャンセルフロー、ポイント返還
 
@@ -128,7 +128,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. データベース基盤 | 2/2 | ✅ Complete | 2026-02-22 |
-| 2. 認証と予約コア | 0/3 | Not started | - |
+| 2. 認証と予約コア | 1/3 | 🔄 In Progress | - |
 | 3. ゲスト予約体験 | 0/2 | Not started | - |
 | 4. 外部API統合 | 0/3 | Not started | - |
 | 5. 管理機能 | 0/2 | Not started | - |
