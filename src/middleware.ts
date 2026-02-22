@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { updateSession } from "@/lib/supabase/middleware"
 
 // 保護対象のパス
-const protectedPaths = ["/dashboard", "/bookings"]
+const protectedPaths = ["/dashboard", "/bookings", "/admin"]
 
 // ログインページのパス
 const authPaths = ["/login"]
