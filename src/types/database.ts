@@ -318,6 +318,14 @@ export type Database = {
         }
         Returns: number
       }
+      manual_adjust_points: {
+        Args: {
+          p_member_plan_id: number
+          p_points: number
+          p_notes: string | null
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
