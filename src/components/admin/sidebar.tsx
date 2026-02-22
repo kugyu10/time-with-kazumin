@@ -20,7 +20,7 @@ const navItems = [
   },
   {
     label: "営業時間",
-    href: "/admin/business-hours",
+    href: "/admin/schedules",
     icon: Clock,
   },
   {
