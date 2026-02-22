@@ -21,6 +21,7 @@ Thumbs.db
 dist/
 build/
 out/
+.next/
 
 # Logs
 *.log
