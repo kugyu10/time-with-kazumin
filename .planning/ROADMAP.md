@@ -13,7 +13,7 @@ Time with Kazuminは、気軽にコーチングセッションを予約できる
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: データベース基盤** - トランザクション整合性とRLSによる堅牢なDB設計
-- [ ] **Phase 2: 認証と予約コア** - Sagaパターンによる予約オーケストレーションと会員認証
+- [x] **Phase 2: 認証と予約コア** - Sagaパターンによる予約オーケストレーションと会員認証
 - [ ] **Phase 3: ゲスト予約体験** - 非会員向けカジュアルセッション予約フロー
 - [ ] **Phase 4: 外部API統合** - Google Calendar、Zoom、Resend統合とレート制限対策
 - [ ] **Phase 5: 管理機能** - 管理者向け設定・CRUD管理画面
@@ -50,8 +50,8 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Supabase Auth統合（Google OAuth＋メール認証）、認証ガード、招待制チェック
-- [ ] 02-02-PLAN.md — Sagaパターンによる予約作成フロー（モック版）、冪等性キー、ポイント残高表示
-- [ ] 02-03-PLAN.md — 予約一覧・詳細表示、キャンセルフロー、ポイント返還
+- [x] 02-02-PLAN.md — Sagaパターンによる予約作成フロー（モック版）、冪等性キー、ポイント残高表示
+- [x] 02-03-PLAN.md — 予約一覧・詳細表示、キャンセルフロー、ポイント返還
 
 ### Phase 3: ゲスト予約体験
 **Goal**: 非会員向けの気軽なカジュアルセッション予約フロー
@@ -128,7 +128,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. データベース基盤 | 2/2 | ✅ Complete | 2026-02-22 |
-| 2. 認証と予約コア | 1/3 | 🔄 In Progress | - |
+| 2. 認証と予約コア | 3/3 | ✅ Complete | 2026-02-22 |
 | 3. ゲスト予約体験 | 0/2 | Not started | - |
 | 4. 外部API統合 | 0/3 | Not started | - |
 | 5. 管理機能 | 0/2 | Not started | - |
