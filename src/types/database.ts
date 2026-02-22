@@ -271,6 +271,32 @@ export type Database = {
           updated_at?: string
         }
       }
+      idempotency_keys: {
+        Row: {
+          id: number
+          key: string
+          request_hash: string
+          response: Json
+          created_at: string
+          expires_at: string
+        }
+        Insert: {
+          id?: number
+          key: string
+          request_hash: string
+          response: Json
+          created_at?: string
+          expires_at?: string
+        }
+        Update: {
+          id?: number
+          key?: string
+          request_hash?: string
+          response?: Json
+          created_at?: string
+          expires_at?: string
+        }
+      }
     }
     Functions: {
       consume_points: {
