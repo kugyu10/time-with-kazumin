@@ -27,7 +27,7 @@ export function Header({ currentPoints }: HeaderProps) {
           href="/dashboard"
           className="text-lg font-semibold text-orange-600 hover:text-orange-700"
         >
-          Time with Kazumin
+          かずみん、時間空いてる？
         </Link>
 
         <div className="flex items-center gap-4">
@@ -44,9 +44,10 @@ export function Header({ currentPoints }: HeaderProps) {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className="text-gray-600 hover:text-gray-800"
+            className="gap-1.5 text-gray-600 hover:text-gray-800"
           >
             <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">ログアウト</span>
           </Button>
         </div>
       </div>

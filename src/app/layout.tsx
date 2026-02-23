@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Time with Kazumin - かずみん、時間空いてる？",
+  title: "かずみん、時間空いてる？",
   description: "コーチ・対話師かずみんのコーチングセッション予約サービス",
 };
 

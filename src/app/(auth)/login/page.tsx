@@ -25,7 +25,7 @@ export default async function LoginPage({
       <Card className="w-full max-w-md shadow-lg border-orange-100">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl font-bold text-orange-600">
-            Time with Kazumin
+            かずみん、時間空いてる？
           </CardTitle>
           <p className="text-gray-600 mt-2">
             かずみんに会いに行こう

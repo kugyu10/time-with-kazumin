@@ -99,7 +99,7 @@ export async function getBookings(filters?: GetBookingsFilters): Promise<AdminBo
         id,
         profiles (
           email,
-          display_name
+          full_name
         )
       )
     `)
@@ -136,7 +136,7 @@ export async function getBookings(filters?: GetBookingsFilters): Promise<AdminBo
       id: number
       profiles: {
         email: string
-        display_name: string | null
+        full_name: string | null
       } | null
     } | null
   }
@@ -163,7 +163,7 @@ export async function getBookings(filters?: GetBookingsFilters): Promise<AdminBo
     menu_name: booking.meeting_menus?.name ?? "不明",
     menu_duration: booking.meeting_menus?.duration_minutes ?? 0,
     user_email: booking.member_plans?.profiles?.email ?? booking.guest_email,
-    user_name: booking.member_plans?.profiles?.display_name ?? booking.guest_name,
+    user_name: booking.member_plans?.profiles?.full_name ?? booking.guest_name,
     is_guest: booking.member_plan_id === null,
   }))
 }

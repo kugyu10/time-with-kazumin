@@ -24,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
         <Container style={container}>
           {children}
           <Hr style={hr} />
-          <Text style={footer}>Time with Kazumin</Text>
+          <Text style={footer}>かずみん、時間空いてる？</Text>
         </Container>
       </Body>
     </Html>

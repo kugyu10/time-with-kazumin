@@ -14,7 +14,7 @@ export default function PublicLayout({
       <header className="border-b border-orange-100 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <h1 className="text-xl font-bold text-orange-600">
-            Time with Kazumin
+            かずみん、時間空いてる？
           </h1>
         </div>
       </header>
