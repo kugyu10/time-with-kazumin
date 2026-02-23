@@ -9,12 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 
 ## Current Position
 
-Phase: 6 of 6 (Automation Tasks)
-Plan: 2 of 2 in current phase
-Status: Complete
-Last activity: 2026-02-23 — 06-02 完了（Edge Functions自動化タスク実装）
+Milestone: v1.0 MVP COMPLETE
+Status: Ready for next milestone
+Last activity: 2026-02-23 — v1.0 milestone archived
 
-Progress: [██████████] 100% (6/6 phases complete)
+Progress: [██████████] 100% (v1.0 shipped)
 
 ## Performance Metrics
 
