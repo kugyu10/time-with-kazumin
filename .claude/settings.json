@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git branch:*)",
       "Bash(npm install:*)",
-      "Bash(npx vitest run:*)"
+      "Bash(npx vitest run:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)"
     ]
   },
   "hooks": {

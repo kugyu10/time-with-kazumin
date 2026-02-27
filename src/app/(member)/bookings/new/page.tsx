@@ -43,11 +43,12 @@ export default function BookingNewPage() {
     try {
       const supabase = createClient()
 
-      // Fetch menus
+      // Fetch menus (exclude zoom_account B for members)
       const { data: menusData, error: menusError } = await supabase
         .from("meeting_menus")
         .select("id, name, description, duration_minutes, points_required")
         .eq("is_active", true)
+        .neq("zoom_account", "B")
         .order("points_required", { ascending: true })
 
       if (menusError) throw menusError
