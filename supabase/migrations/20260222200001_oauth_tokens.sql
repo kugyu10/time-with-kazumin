@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- OAuth Tokens Table
 -- provider: 'google', 'zoom_a', 'zoom_b' などのサービス識別子
 -- access_token/refresh_tokenはpgp_sym_encryptで暗号化して保存
-CREATE TABLE oauth_tokens (
+CREATE TABLE IF NOT EXISTS oauth_tokens (
   id SERIAL PRIMARY KEY,
   provider TEXT NOT NULL,
   access_token_encrypted BYTEA NOT NULL,
@@ -28,13 +28,13 @@ ALTER TABLE oauth_tokens ENABLE ROW LEVEL SECURITY;
 -- 暗号化関数
 CREATE OR REPLACE FUNCTION encrypt_token(token TEXT, encryption_key TEXT)
 RETURNS BYTEA AS $$
-  SELECT pgp_sym_encrypt(token, encryption_key);
+  SELECT extensions.pgp_sym_encrypt(token, encryption_key);
 $$ LANGUAGE SQL IMMUTABLE;
 
 -- 復号化関数
 CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token BYTEA, encryption_key TEXT)
 RETURNS TEXT AS $$
-  SELECT pgp_sym_decrypt(encrypted_token, encryption_key);
+  SELECT extensions.pgp_sym_decrypt(encrypted_token, encryption_key);
 $$ LANGUAGE SQL IMMUTABLE;
 
 -- トークンUPSERT関数（providerごとに1レコード）
@@ -112,6 +112,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS oauth_tokens_updated_at_trigger ON oauth_tokens;
 CREATE TRIGGER oauth_tokens_updated_at_trigger
   BEFORE UPDATE ON oauth_tokens
   FOR EACH ROW
