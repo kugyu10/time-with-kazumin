@@ -54,9 +54,9 @@ describe("Cancel Token", () => {
   beforeEach(async () => {
     vi.stubEnv("JWT_CANCEL_SECRET", "test-secret-key-for-testing")
     vi.resetModules()
-    const module = await import("@/lib/tokens/cancel-token")
-    generateCancelToken = module.generateCancelToken
-    verifyCancelToken = module.verifyCancelToken
+    const cancelTokenModule = await import("@/lib/tokens/cancel-token")
+    generateCancelToken = cancelTokenModule.generateCancelToken
+    verifyCancelToken = cancelTokenModule.verifyCancelToken
   })
 
   afterEach(() => {
