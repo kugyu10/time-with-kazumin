@@ -11,7 +11,7 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 
 Milestone: v1.0 MVP COMPLETE
 Status: Ready for next milestone
-Last activity: 2026-02-23 — v1.0 milestone archived
+Last activity: 2026-03-01 - Completed quick task 1: ログインしている人がadminなら、ヘッダーに管理画面へリンクを表示
 
 Progress: [██████████] 100% (v1.0 shipped)
 
@@ -135,6 +135,12 @@ Recent decisions affecting current work:
 None yet.
 
 ### Blockers/Concerns
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | ログインしている人がadminなら、ヘッダーに管理画面へリンクを表示 | 2026-03-01 | 6637760 | [1-admin](./quick/1-admin/) |
 
 **Phase 1 Critical Risks: RESOLVED**
 - ポイント二重消費リスク: SELECT FOR UPDATE NOWAITをconsume_points()に実装
