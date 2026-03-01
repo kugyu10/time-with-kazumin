@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     }
 
     // バリデーション
-    const validation = validateGuestBooking({ email, name, slotDate, startTime, endTime })
+    const validation = await validateGuestBooking({ email, name, slotDate, startTime, endTime })
     if (!validation.valid) {
       return NextResponse.json(
         { error: validation.errors.join(", ") },

@@ -1,9 +1,8 @@
 /**
- * GET /api/public/slots
+ * GET /api/public/slots/week
  *
- * 空きスロット取得API（認証不要）
- * 指定日の空きスロット一覧を返す
- * Google Calendarのbusy時間も考慮して空き判定
+ * 週間スロット取得API（認証不要）
+ * 指定された開始日から7日間の空きスロット一覧を返す
  */
 
 import { NextResponse } from "next/server"
@@ -12,7 +11,6 @@ import type { Database } from "@/types/database"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 import { getBookingMinHoursAhead } from "@/lib/settings/app-settings"
 
-// 遅延初期化用のクライアント取得関数
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -31,9 +29,6 @@ interface Slot {
   available: boolean
 }
 
-/**
- * busy時間との重複チェック
- */
 function isSlotBusy(
   slotStart: Date,
   slotEnd: Date,
@@ -44,7 +39,6 @@ function isSlotBusy(
     const busyEnd = new Date(busy.end).getTime()
     const slotStartTime = slotStart.getTime()
     const slotEndTime = slotEnd.getTime()
-    // 重複判定: slotStart < busyEnd && slotEnd > busyStart
     return slotStartTime < busyEnd && slotEndTime > busyStart
   })
 }
@@ -53,59 +47,61 @@ export async function GET(request: Request) {
   try {
     const supabase = getSupabase()
     const url = new URL(request.url)
-    const date = url.searchParams.get("date")
+    const startDate = url.searchParams.get("start")
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
       return NextResponse.json(
-        { error: "date パラメータが必要です (YYYY-MM-DD 形式)" },
+        { error: "start パラメータが必要です (YYYY-MM-DD 形式)" },
         { status: 400 }
       )
     }
 
-    // 日付から曜日を取得
-    const targetDate = new Date(date)
-    const dayOfWeek = targetDate.getDay()
+    // 7日間の日付を生成
+    const dates: string[] = []
+    const baseDate = new Date(startDate)
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(baseDate)
+      date.setDate(baseDate.getDate() + i)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, "0")
+      const day = String(date.getDate()).padStart(2, "0")
+      dates.push(`${year}-${month}-${day}`)
+    }
 
-    // 該当曜日のスケジュールを取得
+    // 全曜日のスケジュールを取得
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: schedules, error: scheduleError } = await (supabase as any)
       .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time")
-      .eq("day_of_week", dayOfWeek) as {
+      .select("day_of_week, start_time, end_time") as {
         data: Array<{ day_of_week: number; start_time: string; end_time: string }> | null
         error: { message: string } | null
       }
 
     if (scheduleError) {
-      console.error("[GET /api/public/slots] Schedule error:", scheduleError)
+      console.error("[GET /api/public/slots/week] Schedule error:", scheduleError)
       return NextResponse.json(
         { error: "スケジュール取得に失敗しました" },
         { status: 500 }
       )
     }
 
-    // スケジュールがない場合は空配列を返す
-    if (!schedules || schedules.length === 0) {
-      return NextResponse.json({ slots: [] })
-    }
-
-    // 該当日の予約を取得（キャンセル以外）
-    const dayStart = `${date}T00:00:00`
-    const dayEnd = `${date}T23:59:59`
+    // 週間の予約を取得
+    const weekStart = `${dates[0]}T00:00:00`
+    const weekEnd = `${dates[6]}T23:59:59`
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: bookings, error: bookingsError } = await (supabase as any)
       .from("bookings")
       .select("start_time, end_time, status")
       .neq("status", "canceled")
-      .gte("start_time", dayStart)
-      .lte("end_time", dayEnd) as {
+      .gte("start_time", weekStart)
+      .lte("end_time", weekEnd) as {
         data: Array<{ start_time: string; end_time: string; status: string }> | null
         error: { message: string } | null
       }
 
     if (bookingsError) {
-      console.error("[GET /api/public/slots] Bookings error:", bookingsError)
+      console.error("[GET /api/public/slots/week] Bookings error:", bookingsError)
       return NextResponse.json(
         { error: "予約情報取得に失敗しました" },
         { status: 500 }
@@ -114,40 +110,41 @@ export async function GET(request: Request) {
 
     const existingBookings = bookings || []
 
-    // Google Calendarのbusy時間を取得（15分キャッシュ）
-    // ISO形式でタイムゾーン付きの日時を指定
-    const busyTimeStart = `${date}T00:00:00+09:00`
-    const busyTimeEnd = `${date}T23:59:59+09:00`
+    // Google Calendarのbusy時間を取得（週間分）
+    const busyTimeStart = `${dates[0]}T00:00:00+09:00`
+    const busyTimeEnd = `${dates[6]}T23:59:59+09:00`
     let busyTimes: BusyTime[] = []
 
     try {
       busyTimes = await getCachedBusyTimes(busyTimeStart, busyTimeEnd)
-      console.log(
-        `[GET /api/public/slots] Got ${busyTimes.length} busy times from calendar`
-      )
     } catch (error) {
-      // busy時間取得失敗時はログのみ、予約は可能にする
-      console.warn(
-        "[GET /api/public/slots] Failed to get busy times, continuing without calendar check:",
-        error
-      )
+      console.warn("[GET /api/public/slots/week] Failed to get busy times:", error)
     }
 
-    // 30分単位でスロット生成
-    const slots: Slot[] = []
-    const durationMinutes = 30 // カジュアル30分セッション固定
-
-    // DB設定から予約可能時間を取得
+    // 設定取得
     const bookingMinHoursAhead = await getBookingMinHoursAhead()
 
-    for (const schedule of schedules) {
+    // 各日のスロットを生成
+    const result: Record<string, Slot[]> = {}
+    const durationMinutes = 30
+
+    for (const date of dates) {
+      const targetDate = new Date(date)
+      const dayOfWeek = targetDate.getDay()
+      const schedule = schedules?.find(s => s.day_of_week === dayOfWeek)
+
+      if (!schedule) {
+        result[date] = []
+        continue
+      }
+
+      const slots: Slot[] = []
       const [startHour, startMin] = schedule.start_time.split(":").map(Number)
       const [endHour, endMin] = schedule.end_time.split(":").map(Number)
 
       const scheduleStart = startHour * 60 + startMin
       const scheduleEnd = endHour * 60 + endMin
 
-      // 30分間隔でスロット生成
       for (let time = scheduleStart; time + durationMinutes <= scheduleEnd; time += 30) {
         const slotStartHour = Math.floor(time / 60)
         const slotStartMin = time % 60
@@ -161,7 +158,6 @@ export async function GET(request: Request) {
         const slotStartISO = `${date}T${startTimeStr}:00`
         const slotEndISO = `${date}T${endTimeStr}:00`
 
-        // 既存予約との重複チェック
         const isBooked = existingBookings.some((booking) => {
           const bookingStart = new Date(booking.start_time).getTime()
           const bookingEnd = new Date(booking.end_time).getTime()
@@ -170,12 +166,10 @@ export async function GET(request: Request) {
           return slotStart < bookingEnd && slotEnd > bookingStart
         })
 
-        // Google Calendarのbusy時間との重複チェック
         const slotStartDate = new Date(slotStartISO)
         const slotEndDate = new Date(slotEndISO)
         const isBusy = isSlotBusy(slotStartDate, slotEndDate, busyTimes)
 
-        // 予約可能時間チェック（bookingMinHoursAhead時間後以降でなければ予約不可）
         const minBookingTime = new Date()
         minBookingTime.setHours(minBookingTime.getHours() + bookingMinHoursAhead)
         const isTooSoon = slotStartDate <= minBookingTime
@@ -187,11 +181,13 @@ export async function GET(request: Request) {
           available: !isBooked && !isBusy && !isTooSoon,
         })
       }
+
+      result[date] = slots
     }
 
-    return NextResponse.json({ slots })
+    return NextResponse.json({ slots: result })
   } catch (error) {
-    console.error("[GET /api/public/slots] Error:", error)
+    console.error("[GET /api/public/slots/week] Error:", error)
     return NextResponse.json(
       { error: "スロット取得に失敗しました" },
       { status: 500 }

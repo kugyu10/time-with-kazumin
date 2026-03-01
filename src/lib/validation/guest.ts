@@ -5,6 +5,7 @@
  */
 
 import validator from "validator"
+import { getBookingMinHoursAhead } from "@/lib/settings/app-settings"
 
 interface GuestBookingInput {
   email: string
@@ -25,7 +26,7 @@ interface ValidationResult {
  * @param input - ゲスト予約入力
  * @returns バリデーション結果
  */
-export function validateGuestBooking(input: GuestBookingInput): ValidationResult {
+export async function validateGuestBooking(input: GuestBookingInput): Promise<ValidationResult> {
   const errors: string[] = []
 
   // メールアドレスの検証
@@ -79,11 +80,16 @@ export function validateGuestBooking(input: GuestBookingInput): ValidationResult
     }
   }
 
-  // 未来日時の検証
+  // 予約可能時間の検証（DB設定の時間後以降のみ予約可能）
   if (input.startTime) {
     const start = new Date(input.startTime)
-    if (!isNaN(start.getTime()) && start <= new Date()) {
-      errors.push("予約は未来の日時を選択してください")
+    if (!isNaN(start.getTime())) {
+      const bookingMinHoursAhead = await getBookingMinHoursAhead()
+      const minBookingTime = new Date()
+      minBookingTime.setHours(minBookingTime.getHours() + bookingMinHoursAhead)
+      if (start <= minBookingTime) {
+        errors.push(`予約は${bookingMinHoursAhead}時間後以降の日時を選択してください`)
+      }
     }
   }
 

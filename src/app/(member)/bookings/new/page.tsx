@@ -34,6 +34,7 @@ export default function BookingNewPage() {
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [bookingMinHoursAhead, setBookingMinHoursAhead] = useState<number>(24)
 
   // Fetch menus and schedules
   const fetchData = useCallback(async () => {
@@ -41,6 +42,17 @@ export default function BookingNewPage() {
     setError(null)
 
     try {
+      // Fetch settings
+      try {
+        const settingsResponse = await fetch("/api/public/settings")
+        if (settingsResponse.ok) {
+          const settingsData = await settingsResponse.json()
+          setBookingMinHoursAhead(settingsData.booking_min_hours_ahead || 24)
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings:", err)
+      }
+
       const supabase = createClient()
 
       // Fetch menus (exclude zoom_account B for members)
@@ -187,6 +199,7 @@ export default function BookingNewPage() {
               durationMinutes={selectedMenu.duration_minutes}
               selectedSlot={selectedSlot}
               onSelectSlot={handleSlotSelect}
+              bookingMinHoursAhead={bookingMinHoursAhead}
             />
           )
         )}

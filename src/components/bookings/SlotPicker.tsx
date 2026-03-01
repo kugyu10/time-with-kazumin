@@ -23,6 +23,7 @@ interface SlotPickerProps {
   durationMinutes: number
   selectedSlot: { date: string; startTime: string; endTime: string } | null
   onSelectSlot: (slot: { date: string; startTime: string; endTime: string }) => void
+  bookingMinHoursAhead?: number
 }
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"]
@@ -33,6 +34,7 @@ export function SlotPicker({
   durationMinutes,
   selectedSlot,
   onSelectSlot,
+  bookingMinHoursAhead = 24,
 }: SlotPickerProps) {
   const [weekOffset, setWeekOffset] = useState(0)
 
@@ -107,14 +109,16 @@ export function SlotPicker({
         return slotStart < bookingEnd && slotEnd > bookingStart
       })
 
-      // Check if slot is in the past
+      // Check if slot is too soon (must be at least bookingMinHoursAhead hours in the future)
       const slotDateTime = new Date(`${dayInfo.dateStr}T${startTimeStr}:00`)
-      const isPast = slotDateTime < new Date()
+      const minBookingTime = new Date()
+      minBookingTime.setHours(minBookingTime.getHours() + bookingMinHoursAhead)
+      const isTooSoon = slotDateTime < minBookingTime
 
       slots.push({
         startTime: startTimeStr,
         endTime: endTimeStr,
-        available: !isBooked && !isPast,
+        available: !isBooked && !isTooSoon,
       })
     }
 

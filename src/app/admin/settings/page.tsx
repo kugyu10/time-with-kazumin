@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GoogleConnectButton } from "@/components/admin/GoogleConnectButton"
 import { GoogleConnectionStatus } from "@/components/admin/GoogleConnectionStatus"
 import { ZoomConnectionStatus } from "@/components/admin/ZoomConnectionStatus"
-import { Calendar, Video } from "lucide-react"
+import { BookingSettings } from "@/components/admin/BookingSettings"
+import { Calendar, Video, Clock } from "lucide-react"
 
 export default function AdminSettingsPage({
   searchParams,
@@ -62,6 +63,26 @@ export default function AdminSettingsPage({
           <p className="text-xs text-muted-foreground mt-4">
             ※ Zoomの設定は環境変数で行います。変更が必要な場合は開発者にご連絡ください。
           </p>
+        </CardContent>
+      </Card>
+
+      {/* 予約設定 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-500/10 rounded-md">
+              <Clock className="size-5 text-orange-500" />
+            </div>
+            <div>
+              <CardTitle>予約設定</CardTitle>
+              <CardDescription>
+                予約に関する制限や条件を設定します
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <BookingSettings />
         </CardContent>
       </Card>
     </div>
