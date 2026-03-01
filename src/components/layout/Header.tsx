@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PointBalance } from "@/components/dashboard/PointBalance"
 import { createClient } from "@/lib/supabase/client"
-import { LogOut, CalendarPlus } from "lucide-react"
+import { LogOut, CalendarPlus, Settings } from "lucide-react"
 
 interface HeaderProps {
   currentPoints: number
+  isAdmin?: boolean
 }
 
-export function Header({ currentPoints }: HeaderProps) {
+export function Header({ currentPoints, isAdmin }: HeaderProps) {
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -31,6 +32,15 @@ export function Header({ currentPoints }: HeaderProps) {
         </Link>
 
         <div className="flex items-center gap-4">
+          {isAdmin && (
+            <Link href="/admin/dashboard">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">管理画面</span>
+              </Button>
+            </Link>
+          )}
+
           <Link href="/bookings/new">
             <Button variant="ghost" size="sm" className="gap-1.5">
               <CalendarPlus className="h-4 w-4" />

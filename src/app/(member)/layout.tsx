@@ -16,11 +16,12 @@ export default async function MemberLayout({
   }
 
   // 招待制チェック: profilesテーブルに存在するか確認
-  const { data: profile, error: profileError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile, error: profileError } = await (supabase as any)
     .from("profiles")
     .select("id, role")
     .eq("id", user.id)
-    .single()
+    .single() as { data: { id: string; role: string } | null; error: Error | null }
 
   if (profileError || !profile) {
     // profilesに存在しない = 招待されていない
@@ -42,7 +43,7 @@ export default async function MemberLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      <Header currentPoints={currentPoints} />
+      <Header currentPoints={currentPoints} isAdmin={profile.role === "admin"} />
       <main>{children}</main>
     </div>
   )
