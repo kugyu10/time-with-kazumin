@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         topic: `${CASUAL_30_NAME} - ${trimmedName}`,
         start_time: startTime,
         duration: CASUAL_30_DURATION,
-        accountType: "A", // ゲストはカジュアル用アカウント
+        accountType: "B", // ゲストは無料アカウント（40分制限）
       })
       zoomMeetingId = zoomResult.zoom_meeting_id
       console.log("[Guest Booking] Zoom meeting created:", zoomMeetingId)
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
       console.error("[Guest Booking] Calendar creation failed:", error)
       // Cleanup Zoom
       if (zoomMeetingId && !zoomMeetingId.startsWith("mock-")) {
-        await deleteZoomMeeting(zoomMeetingId, "A").catch(console.error)
+        await deleteZoomMeeting(zoomMeetingId, "B").catch(console.error)
       }
       return NextResponse.json(
         { error: "カレンダー登録に失敗しました" },
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
 
       // Cleanup Zoom and Calendar
       if (zoomMeetingId && !zoomMeetingId.startsWith("mock-")) {
-        await deleteZoomMeeting(zoomMeetingId, "A").catch(console.error)
+        await deleteZoomMeeting(zoomMeetingId, "B").catch(console.error)
       }
       if (googleEventId && !googleEventId.startsWith("mock-")) {
         await deleteCalendarEvent(googleEventId).catch(console.error)
@@ -200,7 +200,7 @@ export async function POST(request: Request) {
     if (!data) {
       // Cleanup
       if (zoomMeetingId && !zoomMeetingId.startsWith("mock-")) {
-        await deleteZoomMeeting(zoomMeetingId, "A").catch(console.error)
+        await deleteZoomMeeting(zoomMeetingId, "B").catch(console.error)
       }
       if (googleEventId && !googleEventId.startsWith("mock-")) {
         await deleteCalendarEvent(googleEventId).catch(console.error)
@@ -264,7 +264,7 @@ export async function POST(request: Request) {
 
     // Cleanup on unexpected error
     if (zoomMeetingId && !zoomMeetingId.startsWith("mock-")) {
-      await deleteZoomMeeting(zoomMeetingId, "A").catch(console.error)
+      await deleteZoomMeeting(zoomMeetingId, "B").catch(console.error)
     }
     if (googleEventId && !googleEventId.startsWith("mock-")) {
       await deleteCalendarEvent(googleEventId).catch(console.error)
