@@ -23,10 +23,26 @@ function getResendClient(): Resend | null {
 }
 
 /**
- * Check if email service is configured
+ * Check if email service is properly configured
+ * Resend requires a custom domain (not gmail.com, yahoo.com, etc.)
  */
 export function isEmailConfigured(): boolean {
-  return !!process.env.RESEND_API_KEY && !!process.env.FROM_EMAIL
+  const apiKey = process.env.RESEND_API_KEY
+  const fromEmail = process.env.FROM_EMAIL
+
+  if (!apiKey || !fromEmail) {
+    return false
+  }
+
+  // Resend doesn't allow public domains like gmail.com, yahoo.com, etc.
+  const publicDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com"]
+  const domain = fromEmail.split("@")[1]?.toLowerCase()
+
+  if (domain && publicDomains.includes(domain)) {
+    return false
+  }
+
+  return true
 }
 
 export interface SendBookingConfirmationParams {
