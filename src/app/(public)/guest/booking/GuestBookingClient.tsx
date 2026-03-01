@@ -47,11 +47,19 @@ export function GuestBookingClient({ schedules }: GuestBookingClientProps) {
         // 実際の予約重複チェックはサーバーサイドで行う
         const bookings: Booking[] = []
 
+        // Format date as YYYY-MM-DD in local timezone
+        const formatDateLocal = (d: Date): string => {
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, "0")
+          const day = String(d.getDate()).padStart(2, "0")
+          return `${year}-${month}-${day}`
+        }
+
         // 今日から35日分の日付をループ
         for (let i = 0; i < 35; i++) {
           const date = new Date(today)
           date.setDate(today.getDate() + i)
-          const dateStr = date.toISOString().split("T")[0]
+          const dateStr = formatDateLocal(date)
 
           const response = await fetch(`/api/public/slots?date=${dateStr}`)
           if (response.ok) {

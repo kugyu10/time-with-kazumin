@@ -49,6 +49,14 @@ export function SlotPicker({
 
   const weekStart = getWeekStart(weekOffset)
 
+  // Format date as YYYY-MM-DD in local timezone
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
   // Generate week days
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -56,7 +64,7 @@ export function SlotPicker({
       date.setDate(weekStart.getDate() + i)
       return {
         date,
-        dateStr: date.toISOString().split("T")[0],
+        dateStr: formatDateLocal(date),
         dayOfWeek: date.getDay(),
         label: `${date.getMonth() + 1}/${date.getDate()}(${DAY_NAMES[date.getDay()]})`,
       }
