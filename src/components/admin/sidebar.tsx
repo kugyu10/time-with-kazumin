@@ -10,6 +10,7 @@ import {
   ListOrdered,
   CreditCard,
   ListChecks,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -48,6 +49,11 @@ const navItems = [
     label: "タスク履歴",
     href: "/admin/tasks",
     icon: ListChecks,
+  },
+  {
+    label: "設定",
+    href: "/admin/settings",
+    icon: Settings,
   },
 ]
 
