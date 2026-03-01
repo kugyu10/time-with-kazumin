@@ -22,7 +22,7 @@ describe("Zoom Integration", () => {
 
   describe("isZoomConfigured", () => {
     it("should return false when credentials are not set", () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "")
 
@@ -30,7 +30,7 @@ describe("Zoom Integration", () => {
     })
 
     it("should return true when all credentials are set", () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
 
@@ -38,10 +38,10 @@ describe("Zoom Integration", () => {
     })
 
     it("should check correct account type", () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "a-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "a-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "a-client")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "a-secret")
-      vi.stubEnv("ZOOM_ACCOUNT_B_ID", "")
+      vi.stubEnv("ZOOM_ACCOUNT_B_ACCOUNT_ID", "")
 
       expect(isZoomConfigured("A")).toBe(true)
       expect(isZoomConfigured("B")).toBe(false)
@@ -50,7 +50,7 @@ describe("Zoom Integration", () => {
 
   describe("createZoomMeeting", () => {
     it("should return mock meeting when not configured", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "")
 
@@ -67,7 +67,7 @@ describe("Zoom Integration", () => {
     })
 
     it("should create meeting when configured", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
 
@@ -107,7 +107,7 @@ describe("Zoom Integration", () => {
     })
 
     it("should throw error when token fetch fails", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
 
@@ -128,7 +128,7 @@ describe("Zoom Integration", () => {
     })
 
     it("should throw error when meeting creation fails", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
 
@@ -168,7 +168,7 @@ describe("Zoom Integration", () => {
     })
 
     it("should delete meeting successfully", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
 
@@ -193,10 +193,10 @@ describe("Zoom Integration", () => {
     })
 
     it("should return false when meeting not found on any account", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
-      vi.stubEnv("ZOOM_ACCOUNT_B_ID", "")
+      vi.stubEnv("ZOOM_ACCOUNT_B_ACCOUNT_ID", "")
 
       mockFetch
         .mockResolvedValueOnce({
@@ -221,7 +221,7 @@ describe("Zoom Integration", () => {
 
   describe("token caching", () => {
     it("should cache access token", async () => {
-      vi.stubEnv("ZOOM_ACCOUNT_A_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
 

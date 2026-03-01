@@ -47,7 +47,7 @@ function getAccountCredentials(accountType: AccountType): {
   clientSecret: string
 } | null {
   const prefix = `ZOOM_ACCOUNT_${accountType}`
-  const accountId = process.env[`${prefix}_ID`]
+  const accountId = process.env[`${prefix}_ACCOUNT_ID`]
   const clientId = process.env[`${prefix}_CLIENT_ID`]
   const clientSecret = process.env[`${prefix}_CLIENT_SECRET`]
 
