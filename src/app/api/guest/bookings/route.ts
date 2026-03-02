@@ -222,7 +222,7 @@ export async function POST(request: Request) {
     try {
       const cancelUrl = `${APP_BASE_URL}/guest/cancel/${cancelToken}`
       const googleCalendarUrl = generateGoogleCalendarUrl(
-        `${CASUAL_30_NAME} - Kazumin`,
+        `${CASUAL_30_NAME} - ${trimmedName}`,
         startTime,
         endTime
       )

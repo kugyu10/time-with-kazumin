@@ -179,10 +179,14 @@ export async function createBookingSaga(
     // Step 6: Add Calendar event (with retry)
     console.log("[Saga] Step 6: Adding calendar event")
     try {
+      // Get user profile for calendar event title
+      const profile = await getProfileData(supabase, userId)
+      const userName = profile?.display_name || "会員"
+
       const calendarResult = await retryWithExponentialBackoff(
         () =>
           addCalendarEvent({
-            summary: `${context.menuName} - Kazumin`,
+            summary: `${context.menuName} - ${userName}`,
             start: context.startTime,
             end: context.endTime,
             description: context.zoomJoinUrl
@@ -228,8 +232,9 @@ export async function createBookingSaga(
         const cancelUrl = `${APP_BASE_URL}/guest/cancel/${cancelToken}`
 
         // Generate Google Calendar URL
+        const userName = profile.display_name || "会員"
         const googleCalendarUrl = generateGoogleCalendarUrl(
-          `${context.menuName} - Kazumin`,
+          `${context.menuName} - ${userName}`,
           context.startTime,
           context.endTime,
           context.zoomJoinUrl ? `Zoom: ${context.zoomJoinUrl}` : undefined
