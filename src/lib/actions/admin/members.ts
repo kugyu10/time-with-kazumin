@@ -129,6 +129,9 @@ export async function createMember(data: CreateMemberInput) {
   // Generate random password (user will reset via email)
   const tempPassword = crypto.randomUUID().slice(0, 16)
 
+  let userId: string
+  let isNewAuthUser = false // Track if we created the auth user (for rollback)
+
   // Create user in Supabase Auth
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     email: validated.email,
@@ -137,11 +140,39 @@ export async function createMember(data: CreateMemberInput) {
   })
 
   if (authError) {
-    throw new Error(`ユーザーの作成に失敗しました: ${authError.message}`)
-  }
+    // Check if user already exists in auth (e.g., from failed Google login attempt)
+    if (authError.message.includes("already been registered")) {
+      // Find existing auth user by email
+      const { data: existingUsers } = await supabase.auth.admin.listUsers()
+      const existingAuthUser = existingUsers?.users?.find(u => u.email === validated.email)
 
-  if (!authUser.user) {
+      if (!existingAuthUser) {
+        throw new Error(`ユーザーの作成に失敗しました: ${authError.message}`)
+      }
+
+      // Check if profile already exists
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existingProfile } = await (supabase as any)
+        .from("profiles")
+        .select("id")
+        .eq("id", existingAuthUser.id)
+        .single() as { data: { id: string } | null }
+
+      if (existingProfile) {
+        throw new Error("このメールアドレスは既に会員として登録されています")
+      }
+
+      // Use existing auth user's ID (don't delete on rollback)
+      userId = existingAuthUser.id
+      isNewAuthUser = false
+    } else {
+      throw new Error(`ユーザーの作成に失敗しました: ${authError.message}`)
+    }
+  } else if (!authUser.user) {
     throw new Error("ユーザーの作成に失敗しました")
+  } else {
+    userId = authUser.user.id
+    isNewAuthUser = true
   }
 
   // Create profile
@@ -149,15 +180,17 @@ export async function createMember(data: CreateMemberInput) {
   const { error: profileError } = await (supabase as any)
     .from("profiles")
     .insert({
-      id: authUser.user.id,
+      id: userId,
       email: validated.email,
       full_name: validated.full_name,
       role: "member",
     }) as { error: { message: string } | null }
 
   if (profileError) {
-    // Rollback: delete auth user
-    await supabase.auth.admin.deleteUser(authUser.user.id)
+    // Rollback: only delete auth user if we created it
+    if (isNewAuthUser) {
+      await supabase.auth.admin.deleteUser(userId)
+    }
     throw new Error(`プロフィールの作成に失敗しました: ${profileError.message}`)
   }
 
@@ -170,8 +203,12 @@ export async function createMember(data: CreateMemberInput) {
     .single() as { data: { monthly_points: number } | null; error: { message: string } | null }
 
   if (planError || !plan) {
-    // Rollback
-    await supabase.auth.admin.deleteUser(authUser.user.id)
+    // Rollback: delete profile, and auth user if we created it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("profiles").delete().eq("id", userId)
+    if (isNewAuthUser) {
+      await supabase.auth.admin.deleteUser(userId)
+    }
     throw new Error(`プランの取得に失敗しました`)
   }
 
@@ -180,7 +217,7 @@ export async function createMember(data: CreateMemberInput) {
   const { error: memberPlanError } = await (supabase as any)
     .from("member_plans")
     .insert({
-      user_id: authUser.user.id,
+      user_id: userId,
       plan_id: validated.plan_id,
       current_points: plan.monthly_points, // Initial points = monthly points
       monthly_points: plan.monthly_points,
@@ -188,8 +225,12 @@ export async function createMember(data: CreateMemberInput) {
     }) as { error: { message: string } | null }
 
   if (memberPlanError) {
-    // Rollback
-    await supabase.auth.admin.deleteUser(authUser.user.id)
+    // Rollback: delete profile, and auth user if we created it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("profiles").delete().eq("id", userId)
+    if (isNewAuthUser) {
+      await supabase.auth.admin.deleteUser(userId)
+    }
     throw new Error(`会員プランの作成に失敗しました: ${memberPlanError.message}`)
   }
 
@@ -200,7 +241,7 @@ export async function createMember(data: CreateMemberInput) {
   })
 
   revalidatePath("/admin/members")
-  return { success: true, userId: authUser.user.id }
+  return { success: true, userId }
 }
 
 /**
