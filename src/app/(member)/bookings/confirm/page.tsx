@@ -64,7 +64,7 @@ function BookingConfirmContent() {
         .single() as { data: { current_points: number } | null; error: Error | null }
 
       if (planError || !memberPlan) {
-        setError("会員プランが見つかりません")
+        setError("ログインユーザーの会員プランが見つかりません")
         setIsLoading(false)
         return
       }
