@@ -152,10 +152,14 @@ export async function createBookingSaga(
     // Step 5: Create Zoom meeting
     console.log("[Saga] Step 5: Creating Zoom meeting")
     try {
+      // Get user profile for Zoom topic
+      const profileForZoom = await getProfileData(supabase, userId)
+      const userNameForZoom = profileForZoom?.display_name || "会員"
+
       // Get zoom_account from menu (default to 'A')
       const zoomAccount = await getMenuZoomAccount(supabase, context.menuId)
       const zoomResult = await createZoomMeeting({
-        topic: `${context.menuName} - Kazumin`,
+        topic: `${context.menuName} - ${userNameForZoom}`,
         start_time: context.startTime,
         duration: context.menuDuration,
         accountType: zoomAccount,
