@@ -219,13 +219,13 @@ export async function cancelBooking(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from("profiles")
-        .select("email, display_name")
+        .select("email, full_name")
         .eq("id", userId)
-        .single() as { data: { email: string; display_name: string | null } | null }
+        .single() as { data: { email: string; full_name: string | null } | null }
 
       if (profile) {
         userEmail = profile.email
-        userName = profile.display_name || "会員"
+        userName = profile.full_name || "会員"
       }
     }
 

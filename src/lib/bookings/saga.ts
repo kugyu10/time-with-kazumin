@@ -154,7 +154,7 @@ export async function createBookingSaga(
     try {
       // Get user profile for Zoom topic
       const profileForZoom = await getProfileData(supabase, userId)
-      const userNameForZoom = profileForZoom?.display_name || profileForZoom?.full_name || "会員"
+      const userNameForZoom = profileForZoom?.full_name || "会員"
 
       // Get zoom_account from menu (default to 'A')
       const zoomAccount = await getMenuZoomAccount(supabase, context.menuId)
@@ -185,7 +185,7 @@ export async function createBookingSaga(
     try {
       // Get user profile for calendar event title
       const profile = await getProfileData(supabase, userId)
-      const userName = profile?.display_name || profile?.full_name || "会員"
+      const userName = profile?.full_name || "会員"
 
       const calendarResult = await retryWithExponentialBackoff(
         () =>
@@ -236,7 +236,7 @@ export async function createBookingSaga(
         const cancelUrl = `${APP_BASE_URL}/guest/cancel/${cancelToken}`
 
         // Generate Google Calendar URL
-        const userName = profile.display_name || profile.full_name || "会員"
+        const userName = profile.full_name || "会員"
         const googleCalendarUrl = generateGoogleCalendarUrl(
           `${context.menuName} - ${userName}`,
           context.startTime,
@@ -246,7 +246,7 @@ export async function createBookingSaga(
 
         await sendBookingConfirmationEmail({
           userEmail: profile.email,
-          userName: profile.display_name || "ゲスト",
+          userName: profile.full_name || "ゲスト",
           sessionTitle: context.menuName,
           startTime: context.startTime,
           endTime: context.endTime,
@@ -465,15 +465,15 @@ async function confirmBooking(
 }
 
 /**
- * Get user profile data (email, display_name, full_name)
+ * Get user profile data (email, full_name)
  */
 async function getProfileData(
   supabase: SupabaseClient<Database>,
   userId: string
-): Promise<{ email: string; display_name: string | null; full_name: string | null } | null> {
+): Promise<{ email: string; full_name: string | null } | null> {
   const { data } = await supabase
     .from("profiles")
-    .select("email, display_name, full_name")
+    .select("email, full_name")
     .eq("id", userId)
     .single()
 
