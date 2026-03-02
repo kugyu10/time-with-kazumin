@@ -2,7 +2,7 @@
  * POST /api/guest/bookings
  *
  * ゲスト予約作成API
- * 認証なしでカジュアル30分セッションを予約
+ * 認証なしで発光ポジティブちょい浴び30分を予約
  * Zoom会議作成、Googleカレンダー登録、確認メール送信を実行
  */
 
@@ -16,10 +16,10 @@ import { createZoomMeeting, deleteZoomMeeting } from "@/lib/integrations/zoom"
 import { addCalendarEvent, deleteCalendarEvent } from "@/lib/integrations/google-calendar"
 import { sendBookingConfirmationEmail } from "@/lib/integrations/email"
 
-// カジュアル30分セッションのメニューID（固定）
+// 発光ポジティブちょい浴び30分のメニューID（固定）
 const CASUAL_30_MENU_ID = 1
 const CASUAL_30_DURATION = 30
-const CASUAL_30_NAME = "ちょい浴び（30分）"
+const CASUAL_30_NAME = "発光ポジティブちょい浴び30分"
 
 // Base URL for cancel links
 const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"

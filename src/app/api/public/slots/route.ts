@@ -135,7 +135,7 @@ export async function GET(request: Request) {
 
     // 30分単位でスロット生成
     const slots: Slot[] = []
-    const durationMinutes = 30 // カジュアル30分セッション固定
+    const durationMinutes = 30 // 発光ポジティブちょい浴び30分固定
 
     // DB設定から予約可能時間を取得
     const bookingMinHoursAhead = await getBookingMinHoursAhead()

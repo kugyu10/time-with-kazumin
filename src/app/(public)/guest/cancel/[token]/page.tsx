@@ -188,7 +188,7 @@ export default async function GuestCancelPage({ params }: PageProps) {
     <CancelPageClient
       token={token}
       booking={{
-        menuName: booking.meeting_menus?.name || "カジュアル30分セッション",
+        menuName: booking.meeting_menus?.name || "発光ポジティブちょい浴び30分",
         guestName: booking.guest_name,
         formattedDate,
         formattedTime,
