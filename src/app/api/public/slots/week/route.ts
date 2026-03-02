@@ -155,8 +155,8 @@ export async function GET(request: Request) {
         const startTimeStr = `${String(slotStartHour).padStart(2, "0")}:${String(slotStartMin).padStart(2, "0")}`
         const endTimeStr = `${String(slotEndHour).padStart(2, "0")}:${String(slotEndMin).padStart(2, "0")}`
 
-        const slotStartISO = `${date}T${startTimeStr}:00`
-        const slotEndISO = `${date}T${endTimeStr}:00`
+        const slotStartISO = `${date}T${startTimeStr}:00+09:00`
+        const slotEndISO = `${date}T${endTimeStr}:00+09:00`
 
         const isBooked = existingBookings.some((booking) => {
           const bookingStart = new Date(booking.start_time).getTime()
