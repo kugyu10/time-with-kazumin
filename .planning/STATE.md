@@ -11,7 +11,7 @@ See: .planning/PROJECT.md (updated 2026-02-22)
 
 Milestone: v1.0 MVP COMPLETE
 Status: Ready for next milestone
-Last activity: 2026-03-01 - Completed quick task 1: ログインしている人がadminなら、ヘッダーに管理画面へリンクを表示
+Last activity: 2026-03-02 - Completed quick task 2: カジュアル30分セッション→発光ポジティブちょい浴び30分 文言変更
 
 Progress: [██████████] 100% (v1.0 shipped)
 
@@ -141,6 +141,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | ログインしている人がadminなら、ヘッダーに管理画面へリンクを表示 | 2026-03-01 | 6637760 | [1-admin](./quick/1-admin/) |
+| 2 | カジュアル30分セッション→発光ポジティブちょい浴び30分 文言変更 | 2026-03-02 | 90483db | - |
 
 **Phase 1 Critical Risks: RESOLVED**
 - ポイント二重消費リスク: SELECT FOR UPDATE NOWAITをconsume_points()に実装
