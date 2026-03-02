@@ -640,11 +640,3 @@ Quality indicators:
 - **Honest gaps:** Coverage issues surfaced, not hidden
 
 </success_criteria>
-
-<mandatory_logging>
-
-## Mandatory Logging
-
-As you work, you MUST continuously append your thought process, what you are about to execute, and the results to `.claude/agent_logs/gsd-roadmapper_log.md`. This is a mandatory rule. Before and after each significant action, add a timestamped entry describing your reasoning, the action taken, and its outcome. Never skip this step.
-
-</mandatory_logging>

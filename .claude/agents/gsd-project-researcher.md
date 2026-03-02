@@ -99,7 +99,7 @@ Always include current year. Use multiple query variations. Mark WebSearch-only 
 Check `brave_search` from orchestrator context. If `true`, use Brave Search for higher quality results:
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs websearch "your query" --limit 10
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" websearch "your query" --limit 10
 ```
 
 **Options:**
@@ -619,11 +619,3 @@ Research is complete when:
 **Quality:** Comprehensive not shallow. Opinionated not wishy-washy. Verified not assumed. Honest about gaps. Actionable for roadmap. Current (year in searches).
 
 </success_criteria>
-
-<mandatory_logging>
-
-## Mandatory Logging
-
-As you work, you MUST continuously append your thought process, what you are about to execute, and the results to `.claude/agent_logs/gsd-project-researcher_log.md`. This is a mandatory rule. Before and after each significant action, add a timestamped entry describing your reasoning, the action taken, and its outcome. Never skip this step.
-
-</mandatory_logging>

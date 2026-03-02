@@ -131,7 +131,7 @@ Write to `.planning/research/SUMMARY.md`
 The 4 parallel researcher agents write files but do NOT commit. You commit everything together.
 
 ```bash
-node ./.claude/get-shit-done/bin/gsd-tools.cjs commit "docs: complete project research" --files .planning/research/
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: complete project research" --files .planning/research/
 ```
 
 ## Step 8: Return Summary
@@ -237,11 +237,3 @@ Quality indicators:
 - **Honest:** Confidence levels reflect actual source quality
 
 </success_criteria>
-
-<mandatory_logging>
-
-## Mandatory Logging
-
-As you work, you MUST continuously append your thought process, what you are about to execute, and the results to `.claude/agent_logs/gsd-research-synthesizer_log.md`. This is a mandatory rule. Before and after each significant action, add a timestamped entry describing your reasoning, the action taken, and its outcome. Never skip this step.
-
-</mandatory_logging>
