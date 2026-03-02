@@ -60,6 +60,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
       start_time,
       end_time,
       status,
+      zoom_join_url,
       meeting_menus (
         name
       )
@@ -73,6 +74,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
         start_time: string
         end_time: string
         status: string
+        zoom_join_url: string | null
         meeting_menus: { name: string } | null
       } | null
       error: { message: string } | null
@@ -156,6 +158,21 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
               <dt className="w-24 text-gray-500">お名前</dt>
               <dd className="text-gray-900">{booking.guest_name}</dd>
             </div>
+            {booking.zoom_join_url && (
+              <div className="flex">
+                <dt className="w-24 text-gray-500">Zoom</dt>
+                <dd className="text-gray-900">
+                  <a
+                    href={booking.zoom_join_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    ミーティングに参加
+                  </a>
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
 
@@ -165,7 +182,11 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
             title={`${booking.meeting_menus?.name || "発光ポジティブちょい浴び30分"} with かずみん`}
             startTime={startDate}
             endTime={endDate}
-            description={`予約者: ${booking.guest_name}\n\nZoomリンクはメールをご確認ください。`}
+            description={
+              booking.zoom_join_url
+                ? `Zoom: ${booking.zoom_join_url}\n\n予約者: ${booking.guest_name}`
+                : `予約者: ${booking.guest_name}`
+            }
           />
         </div>
 
@@ -174,7 +195,7 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
           <h2 className="mb-2 font-semibold text-orange-800">ご確認ください</h2>
           <ul className="space-y-2 text-sm text-orange-700">
             <li>- 予約確認メールをご確認ください</li>
-            <li>- Zoomリンクはメールに記載されています</li>
+            <li>- 上記Zoomリンクから当日ご参加ください</li>
             <li>- キャンセルは下記リンクから行えます</li>
           </ul>
         </div>

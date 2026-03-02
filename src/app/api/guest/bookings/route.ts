@@ -53,6 +53,7 @@ function generateGoogleCalendarUrl(
 export async function POST(request: Request) {
   // Track created resources for cleanup on failure
   let zoomMeetingId: string | null = null
+  let zoomJoinUrl: string | null = null
   let googleEventId: string | null = null
   let bookingId: number | null = null
 
@@ -117,7 +118,8 @@ export async function POST(request: Request) {
         accountType: "B", // ゲストは無料アカウント（40分制限）
       })
       zoomMeetingId = zoomResult.zoom_meeting_id
-      console.log("[Guest Booking] Zoom meeting created:", zoomMeetingId)
+      zoomJoinUrl = zoomResult.zoom_join_url
+      console.log("[Guest Booking] Zoom meeting created:", zoomMeetingId, zoomJoinUrl)
     } catch (error) {
       console.error("[Guest Booking] Zoom creation failed:", error)
       return NextResponse.json(
@@ -133,7 +135,9 @@ export async function POST(request: Request) {
         summary: `${CASUAL_30_NAME} - ${trimmedName}`,
         start: startTime,
         end: endTime,
-        description: `ゲスト予約: ${trimmedName} (${normalizedEmail})`,
+        description: zoomJoinUrl
+          ? `Zoom: ${zoomJoinUrl}\n\nゲスト予約: ${trimmedName} (${normalizedEmail})`
+          : `ゲスト予約: ${trimmedName} (${normalizedEmail})`,
       })
       googleEventId = calendarResult.google_event_id
       console.log("[Guest Booking] Calendar event created:", googleEventId)
@@ -166,7 +170,7 @@ export async function POST(request: Request) {
         status: "confirmed",
         member_plan_id: null,
         zoom_meeting_id: zoomMeetingId,
-        zoom_join_url: null, // Zoom URLはmock以外では取得できないので、別途対応が必要
+        zoom_join_url: zoomJoinUrl,
         google_event_id: googleEventId,
       })
       .select("id")
