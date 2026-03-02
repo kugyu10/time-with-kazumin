@@ -14,18 +14,11 @@ interface Schedule {
   end_time: string
 }
 
-interface Booking {
-  start_time: string
-  end_time: string
-  status: string
-}
-
 export default function BookingNewPage() {
   const router = useRouter()
   const [step, setStep] = useState<1 | 2>(1)
   const [menus, setMenus] = useState<Menu[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
-  const [existingBookings, setExistingBookings] = useState<Booking[]>([])
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<{
     date: string
@@ -72,22 +65,8 @@ export default function BookingNewPage() {
 
       if (schedulesError) throw schedulesError
 
-      // Fetch existing bookings (next 5 weeks)
-      const now = new Date()
-      const fiveWeeksLater = new Date(now.getTime() + 35 * 24 * 60 * 60 * 1000)
-
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from("bookings")
-        .select("start_time, end_time, status")
-        .gte("start_time", now.toISOString())
-        .lte("start_time", fiveWeeksLater.toISOString())
-        .neq("status", "canceled")
-
-      if (bookingsError) throw bookingsError
-
       setMenus(menusData || [])
       setSchedules(schedulesData || [])
-      setExistingBookings(bookingsData || [])
     } catch (err) {
       console.error("Failed to fetch data:", err)
       setError("データの読み込みに失敗しました")
@@ -195,7 +174,6 @@ export default function BookingNewPage() {
           selectedMenu && (
             <SlotPicker
               schedules={schedules}
-              existingBookings={existingBookings}
               durationMinutes={selectedMenu.duration_minutes}
               selectedSlot={selectedSlot}
               onSelectSlot={handleSlotSelect}

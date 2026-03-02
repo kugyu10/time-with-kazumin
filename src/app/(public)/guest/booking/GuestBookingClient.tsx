@@ -1,22 +1,16 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { SlotPicker } from "@/components/bookings/SlotPicker"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight, ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 
 interface Schedule {
   day_of_week: number
   start_time: string
   end_time: string
-}
-
-interface Slot {
-  date: string
-  startTime: string
-  endTime: string
-  available: boolean
 }
 
 interface SelectedSlot {
@@ -30,14 +24,13 @@ interface GuestBookingClientProps {
 }
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"]
+const GUEST_DURATION_MINUTES = 30 // ゲスト予約は30分固定
 
 export function GuestBookingClient({ schedules }: GuestBookingClientProps) {
   const router = useRouter()
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null)
-  const [weekSlots, setWeekSlots] = useState<Map<string, Slot[]>>(new Map())
-  const [isLoadingSlots, setIsLoadingSlots] = useState(true)
-  const [weekOffset, setWeekOffset] = useState(0)
+  const [bookingMinHoursAhead, setBookingMinHoursAhead] = useState<number>(24)
 
   // Form state
   const [email, setEmail] = useState("")
@@ -45,86 +38,24 @@ export function GuestBookingClient({ schedules }: GuestBookingClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Format date as YYYY-MM-DD in local timezone
-  const formatDateLocal = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-
-  // Get start of current week (Monday)
-  const getWeekStart = (offset: number) => {
-    const now = new Date()
-    const dayOfWeek = now.getDay()
-    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-    const monday = new Date(now)
-    monday.setDate(now.getDate() + diff + offset * 7)
-    monday.setHours(0, 0, 0, 0)
-    return monday
-  }
-
-  const weekStart = getWeekStart(weekOffset)
-
-  // Generate week days
-  const weekDays = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(weekStart)
-      date.setDate(weekStart.getDate() + i)
-      const dayOfWeek = date.getDay()
-      const hasSchedule = schedules.some(s => s.day_of_week === dayOfWeek)
-      return {
-        date,
-        dateStr: formatDateLocal(date),
-        dayOfWeek,
-        dayName: DAY_NAMES[dayOfWeek],
-        dayNum: date.getDate(),
-        month: date.getMonth() + 1,
-        hasSchedule,
-      }
-    })
-  }, [weekStart, schedules])
-
-  // Fetch all slots for the week (single API call)
+  // Fetch settings
   useEffect(() => {
-    async function fetchWeekSlots() {
-      setIsLoadingSlots(true)
-
+    async function fetchSettings() {
       try {
-        const startDateStr = formatDateLocal(weekStart)
-        const response = await fetch(`/api/public/slots/week?start=${startDateStr}`)
-
+        const response = await fetch("/api/public/settings")
         if (response.ok) {
           const data = await response.json()
-          const slotsMap = new Map<string, Slot[]>()
-
-          // Convert object to Map
-          if (data.slots) {
-            Object.entries(data.slots).forEach(([dateStr, slots]) => {
-              slotsMap.set(dateStr, slots as Slot[])
-            })
-          }
-
-          setWeekSlots(slotsMap)
+          setBookingMinHoursAhead(data.booking_min_hours_ahead || 24)
         }
       } catch (err) {
-        console.error("Failed to fetch slots:", err)
-      } finally {
-        setIsLoadingSlots(false)
+        console.error("Failed to fetch settings:", err)
       }
     }
+    fetchSettings()
+  }, [])
 
-    fetchWeekSlots()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekOffset])
-
-  const handleSlotSelect = (slot: Slot) => {
-    if (!slot.available) return
-    setSelectedSlot({
-      date: slot.date,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-    })
+  const handleSlotSelect = (slot: SelectedSlot) => {
+    setSelectedSlot(slot)
     setStep(2)
   }
 
@@ -225,105 +156,13 @@ export function GuestBookingClient({ schedules }: GuestBookingClientProps) {
 
       {step === 1 ? (
         <div className="rounded-lg bg-white p-4 shadow-sm sm:p-6">
-          {/* Week navigation */}
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">日時を選択</h2>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setWeekOffset(o => o - 1)}
-                disabled={weekOffset === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="min-w-[100px] text-center text-sm">
-                {weekDays[0].month}/{weekDays[0].dayNum} - {weekDays[6].month}/{weekDays[6].dayNum}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setWeekOffset(o => o + 1)}
-                disabled={weekOffset >= 4}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {isLoadingSlots ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="grid min-w-[600px] grid-cols-7 gap-1 sm:gap-2">
-                {weekDays.map((day) => {
-                  const slots = weekSlots.get(day.dateStr) || []
-                  const availableSlots = slots.filter(s => s.available)
-                  const unavailableSlots = slots.filter(s => !s.available)
-
-                  return (
-                    <div key={day.dateStr} className="min-w-0">
-                      {/* Day header */}
-                      <div
-                        className={cn(
-                          "rounded-t-lg bg-gray-100 py-2 text-center",
-                          day.dayOfWeek === 0 && "text-red-600",
-                          day.dayOfWeek === 6 && "text-blue-600"
-                        )}
-                      >
-                        <div className="text-xs">{day.dayName}</div>
-                        <div className="text-sm font-semibold">{day.month}/{day.dayNum}</div>
-                      </div>
-
-                      {/* Slots */}
-                      <div className="space-y-1 rounded-b-lg border border-t-0 border-gray-100 bg-gray-50 p-1">
-                        {!day.hasSchedule ? (
-                          <div className="py-3 text-center text-xs text-gray-400">休</div>
-                        ) : slots.length === 0 ? (
-                          <div className="py-3 text-center text-xs text-gray-400">-</div>
-                        ) : (
-                          <>
-                            {availableSlots.map((slot) => {
-                              const time = slot.startTime.split("T")[1]?.substring(0, 5) || ""
-                              const isSelected = selectedSlot?.startTime === slot.startTime
-                              return (
-                                <button
-                                  key={slot.startTime}
-                                  onClick={() => handleSlotSelect(slot)}
-                                  className={cn(
-                                    "w-full rounded py-1.5 text-xs font-medium transition-colors",
-                                    isSelected
-                                      ? "bg-orange-500 text-white"
-                                      : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-                                  )}
-                                >
-                                  {time}
-                                </button>
-                              )
-                            })}
-                            {unavailableSlots.map((slot) => {
-                              const time = slot.startTime.split("T")[1]?.substring(0, 5) || ""
-                              return (
-                                <div
-                                  key={slot.startTime}
-                                  className="w-full rounded bg-gray-200 py-1.5 text-center text-xs text-gray-400 line-through"
-                                >
-                                  {time}
-                                </div>
-                              )
-                            })}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
+          <SlotPicker
+            schedules={schedules}
+            durationMinutes={GUEST_DURATION_MINUTES}
+            selectedSlot={selectedSlot}
+            onSelectSlot={handleSlotSelect}
+            bookingMinHoursAhead={bookingMinHoursAhead}
+          />
           <p className="mt-4 text-center text-xs text-gray-500">
             空いている時間をタップして予約へ進めます
           </p>

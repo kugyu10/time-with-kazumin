@@ -56,6 +56,12 @@ export async function GET(request: Request) {
       )
     }
 
+    // オプションパラメータ
+    const durationParam = url.searchParams.get("duration")
+    const durationMinutes = durationParam ? parseInt(durationParam, 10) : 30
+    const minHoursParam = url.searchParams.get("minHours")
+    const customMinHoursAhead = minHoursParam ? parseInt(minHoursParam, 10) : null
+
     // 7日間の日付を生成
     const dates: string[] = []
     const baseDate = new Date(startDate)
@@ -121,12 +127,11 @@ export async function GET(request: Request) {
       console.warn("[GET /api/public/slots/week] Failed to get busy times:", error)
     }
 
-    // 設定取得
-    const bookingMinHoursAhead = await getBookingMinHoursAhead()
+    // 設定取得（パラメータ指定がなければDB設定を使用）
+    const bookingMinHoursAhead = customMinHoursAhead ?? await getBookingMinHoursAhead()
 
     // 各日のスロットを生成
     const result: Record<string, Slot[]> = {}
-    const durationMinutes = 30
 
     for (const date of dates) {
       const targetDate = new Date(date)
