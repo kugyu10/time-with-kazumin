@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-03T11:53:43.578Z"
+progress:
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 16
+  completed_plans: 16
+---
+
 # Project State
 
 ## Project Reference
@@ -5,22 +18,24 @@
 See: .planning/PROJECT.md (updated 2026-02-22)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Phase 6 - Automation Tasks
+**Current focus:** v1.1 - 営業時間拡張
 
 ## Current Position
 
-Milestone: v1.0 MVP COMPLETE
-Status: Ready for next milestone
-Last activity: 2026-03-02 - Completed quick task 2: カジュアル30分セッション→発光ポジティブちょい浴び30分 文言変更
+Milestone: v1.1 営業時間拡張
+Phase: 7 (business-hours-extension)
+Current Plan: 1/1
+Status: Complete
+Last activity: 2026-03-03 — Phase 7 Plan 1 completed
 
-Progress: [██████████] 100% (v1.0 shipped)
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: ~7 min
-- Total execution time: ~115 min
+- Total execution time: ~117 min
 
 **By Phase:**
 
@@ -32,13 +47,15 @@ Progress: [██████████] 100% (v1.0 shipped)
 | Phase 4 | 3/3 | ~22min | ~7min |
 | Phase 5 | 3/3 | ~22min | ~7min |
 | Phase 6 | 2/2 | ~11min | ~5.5min |
+| Phase 7 | 1/1 | ~2min | ~2min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 ✓, 05-02 ✓, 05-03 ✓, 06-01 ✓, 06-02 ✓
-- Trend: Excellent velocity (~5-7min/plan)
+- Last 5 plans: 05-03 ✓, 06-01 ✓, 06-02 ✓, 07-01 ✓
+- Trend: Excellent velocity (~2-7min/plan)
 
 *Updated after each plan completion*
 | Phase 06 P02 | 6min | 4 tasks | 10 files |
+| Phase 07 P01 | 2 | 5 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -67,6 +84,7 @@ Recent decisions affecting current work:
 - send_thank_you_emailをmeeting_menusに配置: メニューごとにサンキューメール送信をON/OFF可能
 - [Phase 06]: Edge FunctionsからResend API直接呼び出し: Next.js経由せずDeno runtimeから直接fetch
 - [Phase 06]: HTMLテンプレート手動生成: React Email renderはサーバーサイド専用のためEdge Function内でHTML文字列を直接生成
+- [Phase 07]: 祝日パターンは day_of_week=0 の1行で管理（曜日無視）
 
 ### Phase 2 Implementation Summary
 
@@ -199,8 +217,17 @@ None yet.
 - タスク実行履歴管理画面（/admin/tasks、フィルタ機能付き）
 - Resend API直接呼び出し（Deno runtime対応）
 
+### Phase 7 Implementation Summary (Complete)
+
+**祝日パターン全曜日共通化・管理画面UI修正 (07-01):**
+- 祝日専用フォームコンポーネント（HolidayScheduleForm）
+- 管理画面UIの祝日タブ修正（1つの営業時間フォームのみ表示）
+- updateHolidaySchedule Server Action（day_of_week=0で1行管理）
+- スロットAPI（単日版・週間版）で祝日判定時に曜日無視
+- 祝日は曜日に関係なく同一の営業時間を適用
+
 ## Session Continuity
 
-Last session: 2026-02-23
-Stopped at: Completed 06-02-PLAN.md (Edge Functions自動化タスク実装)
+Last session: 2026-03-03
+Stopped at: Completed 07-01-PLAN.md (祝日パターン全曜日共通化・管理画面UI修正)
 Resume file: None

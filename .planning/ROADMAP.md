@@ -121,10 +121,33 @@ Plans:
 - [x] 06-01-PLAN.md — DB基盤（task_execution_logs、カラム追加、pg_cronジョブ）、メールテンプレート、メニュー設定拡張
 - [x] 06-02-PLAN.md — Edge Functions（月次ポイント、リマインダー、サンキュー）、タスク履歴管理画面
 
+### Phase 7: 営業時間拡張
+**Goal**: 祝日・休憩時間・予約自動完了で営業時間管理を強化
+**Depends on**: Phase 6
+**Requirements**: HOLIDAY-01, HOLIDAY-02, HOLIDAY-03, BREAK-01, BREAK-02, AUTO-01, AUTO-02
+**Success Criteria** (what must be TRUE):
+  1. 祝日（例: 2026/3/20春分の日）に予約すると、祝日パターンの営業時間が表示される
+  2. 管理画面で「祝日」タブから営業時間を1つだけ設定できる
+  3. 休憩時間を設定すると、その時間帯のスロットが予約不可になる
+  4. 終了30分後の予約がcompletedに自動更新される
+  5. completedになった予約に対してサンキューメールが送信される
+**Plans**: 1 plan (予定)
+
+Plans:
+- [ ] 07-01-PLAN.md — 祝日パターン全曜日共通化、管理画面UI修正
+
+**Implementation Status:**
+- [x] 祝日判定ユーティリティ (holidays.ts) — 実装済み
+- [x] 休憩時間DBカラム追加 — マイグレーション済み
+- [x] スロット生成API修正（祝日判定・休憩時間対応）— 実装済み
+- [x] 予約自動完了Edge Function — 実装済み
+- [ ] 祝日パターンを全曜日共通化 — **要修正**
+- [ ] 管理画面祝日設定UI — **要修正**
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -134,6 +157,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. 外部API統合 | 3/3 | ✅ Complete | 2026-02-22 |
 | 5. 管理機能 | 3/3 | ✅ Complete | 2026-02-22 |
 | 6. 自動化タスク | 2/2 | ✅ Complete | 2026-02-23 |
+| 7. 営業時間拡張 | 0/1 | ◆ In Progress | — |
 
 **v1.0 MVP: SHIPPED** (2026-02-23)
 See `.planning/milestones/v1.0-ROADMAP.md` for full details.
+
+**v1.1 営業時間拡張: IN PROGRESS** (started 2026-03-03)
