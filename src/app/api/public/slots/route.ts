@@ -11,6 +11,7 @@ import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 import { getBookingMinHoursAhead } from "@/lib/settings/app-settings"
+import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
 // 遅延初期化用のクライアント取得関数
 function getSupabase() {
@@ -66,13 +67,23 @@ export async function GET(request: Request) {
     const targetDate = new Date(date)
     const dayOfWeek = targetDate.getDay()
 
-    // 該当曜日のスケジュールを取得
+    // 祝日判定
+    const isHoliday = await isJapaneseHoliday(date)
+
+    // 該当曜日のスケジュールを取得（平日・祝日両パターン）
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: schedules, error: scheduleError } = await (supabase as any)
       .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time")
+      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
       .eq("day_of_week", dayOfWeek) as {
-        data: Array<{ day_of_week: number; start_time: string; end_time: string }> | null
+        data: Array<{
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_holiday_pattern: boolean
+          break_start_time: string | null
+          break_end_time: string | null
+        }> | null
         error: { message: string } | null
       }
 
@@ -84,8 +95,16 @@ export async function GET(request: Request) {
       )
     }
 
+    // 適切なパターンのスケジュールを選択（祝日なら祝日パターン、そうでなければ平日パターン）
+    let activeSchedule = schedules?.find((s) => s.is_holiday_pattern === isHoliday)
+
+    // 該当パターンがなければ反対のパターンを試す
+    if (!activeSchedule) {
+      activeSchedule = schedules?.find((s) => s.is_holiday_pattern !== isHoliday)
+    }
+
     // スケジュールがない場合は空配列を返す
-    if (!schedules || schedules.length === 0) {
+    if (!activeSchedule) {
       return NextResponse.json({ slots: [] })
     }
 
@@ -140,53 +159,70 @@ export async function GET(request: Request) {
     // DB設定から予約可能時間を取得
     const bookingMinHoursAhead = await getBookingMinHoursAhead()
 
-    for (const schedule of schedules) {
-      const [startHour, startMin] = schedule.start_time.split(":").map(Number)
-      const [endHour, endMin] = schedule.end_time.split(":").map(Number)
+    const [startHour, startMin] = activeSchedule.start_time.split(":").map(Number)
+    const [endHour, endMin] = activeSchedule.end_time.split(":").map(Number)
 
-      const scheduleStart = startHour * 60 + startMin
-      const scheduleEnd = endHour * 60 + endMin
+    const scheduleStart = startHour * 60 + startMin
+    const scheduleEnd = endHour * 60 + endMin
 
-      // 30分間隔でスロット生成
-      for (let time = scheduleStart; time + durationMinutes <= scheduleEnd; time += 30) {
-        const slotStartHour = Math.floor(time / 60)
-        const slotStartMin = time % 60
-        const slotEndTime = time + durationMinutes
-        const slotEndHour = Math.floor(slotEndTime / 60)
-        const slotEndMin = slotEndTime % 60
+    // 休憩時間の解析
+    let breakStart: number | null = null
+    let breakEnd: number | null = null
+    if (activeSchedule.break_start_time && activeSchedule.break_end_time) {
+      const [breakStartHour, breakStartMin] = activeSchedule.break_start_time.split(":").map(Number)
+      const [breakEndHour, breakEndMin] = activeSchedule.break_end_time.split(":").map(Number)
+      breakStart = breakStartHour * 60 + breakStartMin
+      breakEnd = breakEndHour * 60 + breakEndMin
+    }
 
-        const startTimeStr = `${String(slotStartHour).padStart(2, "0")}:${String(slotStartMin).padStart(2, "0")}`
-        const endTimeStr = `${String(slotEndHour).padStart(2, "0")}:${String(slotEndMin).padStart(2, "0")}`
-
-        const slotStartISO = `${date}T${startTimeStr}:00+09:00`
-        const slotEndISO = `${date}T${endTimeStr}:00+09:00`
-
-        // 既存予約との重複チェック
-        const isBooked = existingBookings.some((booking) => {
-          const bookingStart = new Date(booking.start_time).getTime()
-          const bookingEnd = new Date(booking.end_time).getTime()
-          const slotStart = new Date(slotStartISO).getTime()
-          const slotEnd = new Date(slotEndISO).getTime()
-          return slotStart < bookingEnd && slotEnd > bookingStart
-        })
-
-        // Google Calendarのbusy時間との重複チェック
-        const slotStartDate = new Date(slotStartISO)
-        const slotEndDate = new Date(slotEndISO)
-        const isBusy = isSlotBusy(slotStartDate, slotEndDate, busyTimes)
-
-        // 予約可能時間チェック（bookingMinHoursAhead時間後以降でなければ予約不可）
-        const minBookingTime = new Date()
-        minBookingTime.setHours(minBookingTime.getHours() + bookingMinHoursAhead)
-        const isTooSoon = slotStartDate <= minBookingTime
-
-        slots.push({
-          date,
-          startTime: slotStartISO,
-          endTime: slotEndISO,
-          available: !isBooked && !isBusy && !isTooSoon,
-        })
+    // 30分間隔でスロット生成
+    for (let time = scheduleStart; time + durationMinutes <= scheduleEnd; time += 30) {
+      // 休憩時間と重なるスロットはスキップ
+      if (breakStart !== null && breakEnd !== null) {
+        const slotEnd = time + durationMinutes
+        // スロットが休憩時間と重なっているかチェック
+        if (time < breakEnd && slotEnd > breakStart) {
+          continue
+        }
       }
+
+      const slotStartHour = Math.floor(time / 60)
+      const slotStartMin = time % 60
+      const slotEndTime = time + durationMinutes
+      const slotEndHour = Math.floor(slotEndTime / 60)
+      const slotEndMin = slotEndTime % 60
+
+      const startTimeStr = `${String(slotStartHour).padStart(2, "0")}:${String(slotStartMin).padStart(2, "0")}`
+      const endTimeStr = `${String(slotEndHour).padStart(2, "0")}:${String(slotEndMin).padStart(2, "0")}`
+
+      const slotStartISO = `${date}T${startTimeStr}:00+09:00`
+      const slotEndISO = `${date}T${endTimeStr}:00+09:00`
+
+      // 既存予約との重複チェック
+      const isBooked = existingBookings.some((booking) => {
+        const bookingStart = new Date(booking.start_time).getTime()
+        const bookingEnd = new Date(booking.end_time).getTime()
+        const slotStart = new Date(slotStartISO).getTime()
+        const slotEnd = new Date(slotEndISO).getTime()
+        return slotStart < bookingEnd && slotEnd > bookingStart
+      })
+
+      // Google Calendarのbusy時間との重複チェック
+      const slotStartDate = new Date(slotStartISO)
+      const slotEndDate = new Date(slotEndISO)
+      const isBusy = isSlotBusy(slotStartDate, slotEndDate, busyTimes)
+
+      // 予約可能時間チェック（bookingMinHoursAhead時間後以降でなければ予約不可）
+      const minBookingTime = new Date()
+      minBookingTime.setHours(minBookingTime.getHours() + bookingMinHoursAhead)
+      const isTooSoon = slotStartDate <= minBookingTime
+
+      slots.push({
+        date,
+        startTime: slotStartISO,
+        endTime: slotEndISO,
+        available: !isBooked && !isBusy && !isTooSoon,
+      })
     }
 
     return NextResponse.json({ slots })

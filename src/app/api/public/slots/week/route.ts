@@ -10,6 +10,7 @@ import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 import { getBookingMinHoursAhead } from "@/lib/settings/app-settings"
+import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -74,12 +75,19 @@ export async function GET(request: Request) {
       dates.push(`${year}-${month}-${day}`)
     }
 
-    // 全曜日のスケジュールを取得
+    // 全曜日のスケジュールを取得（平日・祝日両パターン）
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: schedules, error: scheduleError } = await (supabase as any)
       .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time") as {
-        data: Array<{ day_of_week: number; start_time: string; end_time: string }> | null
+      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time") as {
+        data: Array<{
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_holiday_pattern: boolean
+          break_start_time: string | null
+          break_end_time: string | null
+        }> | null
         error: { message: string } | null
       }
 
@@ -136,21 +144,56 @@ export async function GET(request: Request) {
     for (const date of dates) {
       const targetDate = new Date(date)
       const dayOfWeek = targetDate.getDay()
-      const schedule = schedules?.find(s => s.day_of_week === dayOfWeek)
 
-      if (!schedule) {
+      // 祝日判定
+      const isHoliday = await isJapaneseHoliday(date)
+
+      // 適切なパターンのスケジュールを取得（祝日なら祝日パターン、そうでなければ平日パターン）
+      const schedule = schedules?.find(
+        (s) => s.day_of_week === dayOfWeek && s.is_holiday_pattern === isHoliday
+      )
+
+      // 該当パターンがなければ反対のパターンを試す
+      const fallbackSchedule =
+        schedule ??
+        schedules?.find(
+          (s) => s.day_of_week === dayOfWeek && s.is_holiday_pattern !== isHoliday
+        )
+
+      if (!fallbackSchedule) {
         result[date] = []
         continue
       }
 
+      const activeSchedule = schedule ?? fallbackSchedule
+
       const slots: Slot[] = []
-      const [startHour, startMin] = schedule.start_time.split(":").map(Number)
-      const [endHour, endMin] = schedule.end_time.split(":").map(Number)
+      const [startHour, startMin] = activeSchedule.start_time.split(":").map(Number)
+      const [endHour, endMin] = activeSchedule.end_time.split(":").map(Number)
 
       const scheduleStart = startHour * 60 + startMin
       const scheduleEnd = endHour * 60 + endMin
 
+      // 休憩時間の解析
+      let breakStart: number | null = null
+      let breakEnd: number | null = null
+      if (activeSchedule.break_start_time && activeSchedule.break_end_time) {
+        const [breakStartHour, breakStartMin] = activeSchedule.break_start_time.split(":").map(Number)
+        const [breakEndHour, breakEndMin] = activeSchedule.break_end_time.split(":").map(Number)
+        breakStart = breakStartHour * 60 + breakStartMin
+        breakEnd = breakEndHour * 60 + breakEndMin
+      }
+
       for (let time = scheduleStart; time + durationMinutes <= scheduleEnd; time += 30) {
+        // 休憩時間と重なるスロットはスキップ
+        if (breakStart !== null && breakEnd !== null) {
+          const slotEnd = time + durationMinutes
+          // スロットが休憩時間と重なっているかチェック
+          if (time < breakEnd && slotEnd > breakStart) {
+            continue
+          }
+        }
+
         const slotStartHour = Math.floor(time / 60)
         const slotStartMin = time % 60
         const slotEndTime = time + durationMinutes

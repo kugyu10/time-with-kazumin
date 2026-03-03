@@ -23,6 +23,8 @@ const scheduleEntrySchema = z.object({
   start_time: z.string(),
   end_time: z.string(),
   is_available: z.boolean(),
+  break_start_time: z.string().optional(),
+  break_end_time: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -46,6 +48,8 @@ function schedulesToFormValues(schedules: Schedule[]): FormValues["schedules"] {
     start_time: "09:00",
     end_time: "18:00",
     is_available: false,
+    break_start_time: "",
+    break_end_time: "",
   }))
 
   // Overlay existing schedules
@@ -57,6 +61,8 @@ function schedulesToFormValues(schedules: Schedule[]): FormValues["schedules"] {
         start_time: schedule.start_time.slice(0, 5), // "HH:MM:SS" -> "HH:MM"
         end_time: schedule.end_time.slice(0, 5),
         is_available: true,
+        break_start_time: schedule.break_start_time?.slice(0, 5) ?? "",
+        break_end_time: schedule.break_end_time?.slice(0, 5) ?? "",
       }
     }
   })
@@ -100,10 +106,12 @@ export function ScheduleForm({ initialSchedules, isHolidayPattern }: ScheduleFor
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="rounded-md border">
-          <div className="grid grid-cols-[80px_1fr_1fr_80px] gap-4 p-4 border-b bg-muted/50 font-medium text-sm">
+          <div className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_80px] gap-4 p-4 border-b bg-muted/50 font-medium text-sm">
             <div>曜日</div>
             <div>開始時刻</div>
             <div>終了時刻</div>
+            <div>休憩開始</div>
+            <div>休憩終了</div>
             <div>営業</div>
           </div>
 
@@ -113,7 +121,7 @@ export function ScheduleForm({ initialSchedules, isHolidayPattern }: ScheduleFor
             return (
               <div
                 key={field.id}
-                className="grid grid-cols-[80px_1fr_1fr_80px] gap-4 p-4 border-b last:border-b-0 items-center"
+                className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_80px] gap-4 p-4 border-b last:border-b-0 items-center"
               >
                 <div className="font-medium">
                   {DAY_NAMES[field.day_of_week]}曜日
@@ -147,6 +155,44 @@ export function ScheduleForm({ initialSchedules, isHolidayPattern }: ScheduleFor
                           {...inputField}
                           disabled={!isAvailable}
                           className={!isAvailable ? "opacity-50" : ""}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`schedules.${index}.break_start_time`}
+                  render={({ field: inputField }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          {...inputField}
+                          value={inputField.value ?? ""}
+                          disabled={!isAvailable}
+                          className={!isAvailable ? "opacity-50" : ""}
+                          placeholder="任意"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`schedules.${index}.break_end_time`}
+                  render={({ field: inputField }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          {...inputField}
+                          value={inputField.value ?? ""}
+                          disabled={!isAvailable}
+                          className={!isAvailable ? "opacity-50" : ""}
+                          placeholder="任意"
                         />
                       </FormControl>
                     </FormItem>

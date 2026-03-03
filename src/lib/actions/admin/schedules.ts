@@ -11,6 +11,8 @@ const ScheduleEntrySchema = z.object({
   start_time: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM形式で入力してください"),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM形式で入力してください"),
   is_available: z.boolean(),
+  break_start_time: z.string().optional(),
+  break_end_time: z.string().optional(),
 })
 
 // Full schedule for a pattern (7 days)
@@ -24,6 +26,8 @@ export type Schedule = {
   is_holiday_pattern: boolean
   start_time: string
   end_time: string
+  break_start_time: string | null
+  break_end_time: string | null
   created_at: string
   updated_at: string
 }
@@ -97,6 +101,8 @@ export async function updateSchedules(
     is_holiday_pattern: isHolidayPattern,
     start_time: entry.is_available ? entry.start_time : "00:00",
     end_time: entry.is_available ? entry.end_time : "00:00",
+    break_start_time: entry.is_available && entry.break_start_time ? entry.break_start_time : null,
+    break_end_time: entry.is_available && entry.break_end_time ? entry.break_end_time : null,
   }))
 
   // Delete existing schedules for this pattern and insert new ones

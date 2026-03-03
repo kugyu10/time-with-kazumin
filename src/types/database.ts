@@ -147,6 +147,8 @@ export type Database = {
           is_holiday_pattern: boolean
           start_time: string
           end_time: string
+          break_start_time: string | null
+          break_end_time: string | null
           created_at: string
           updated_at: string
         }
@@ -156,6 +158,8 @@ export type Database = {
           is_holiday_pattern?: boolean
           start_time: string
           end_time: string
+          break_start_time?: string | null
+          break_end_time?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -165,6 +169,8 @@ export type Database = {
           is_holiday_pattern?: boolean
           start_time?: string
           end_time?: string
+          break_start_time?: string | null
+          break_end_time?: string | null
           created_at?: string
           updated_at?: string
         }
