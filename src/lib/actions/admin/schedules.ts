@@ -134,3 +134,52 @@ export async function updateSchedules(
   revalidatePath("/admin/schedules")
   return { success: true }
 }
+
+/**
+ * Update holiday schedule (single entry for all days)
+ * Deletes all existing holiday patterns and inserts a single entry with day_of_week = 0
+ */
+export async function updateHolidaySchedule(schedule: {
+  start_time: string
+  end_time: string
+  is_available: boolean
+  break_start_time?: string
+  break_end_time?: string
+}): Promise<{ success: boolean }> {
+  await requireAdmin()
+
+  const supabase = getSupabaseServiceRole()
+
+  // Delete all existing holiday patterns
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: deleteError } = await (supabase as any)
+    .from("weekly_schedules")
+    .delete()
+    .eq("is_holiday_pattern", true) as { error: { message: string } | null }
+
+  if (deleteError) {
+    throw new Error(`祝日パターンの削除に失敗しました: ${deleteError.message}`)
+  }
+
+  // Only insert if is_available is true
+  if (schedule.is_available) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
+      .from("weekly_schedules")
+      .insert({
+        day_of_week: 0, // Fixed value for holiday pattern
+        is_holiday_pattern: true,
+        start_time: schedule.start_time,
+        end_time: schedule.end_time,
+        break_start_time: schedule.break_start_time || null,
+        break_end_time: schedule.break_end_time || null,
+      }) as { error: { message: string } | null }
+
+    if (insertError) {
+      throw new Error(`祝日パターンの作成に失敗しました: ${insertError.message}`)
+    }
+  }
+
+  revalidatePath("/admin/schedules")
+  return { success: true }
+}
