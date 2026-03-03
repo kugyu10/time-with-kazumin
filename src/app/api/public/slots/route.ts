@@ -70,37 +70,68 @@ export async function GET(request: Request) {
     // 祝日判定
     const isHoliday = await isJapaneseHoliday(date)
 
-    // 該当曜日のスケジュールを取得（平日・祝日両パターン）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: schedules, error: scheduleError } = await (supabase as any)
-      .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
-      .eq("day_of_week", dayOfWeek) as {
-        data: Array<{
-          day_of_week: number
-          start_time: string
-          end_time: string
-          is_holiday_pattern: boolean
-          break_start_time: string | null
-          break_end_time: string | null
-        }> | null
-        error: { message: string } | null
+    // スケジュール取得：祝日の場合は曜日を無視
+    let activeSchedule: {
+      day_of_week: number
+      start_time: string
+      end_time: string
+      is_holiday_pattern: boolean
+      break_start_time: string | null
+      break_end_time: string | null
+    } | null = null
+
+    if (isHoliday) {
+      // 祝日: is_holiday_pattern=true の最初の1行を使用（曜日無視）
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: holidaySchedule, error: scheduleError } = await (supabase as any)
+        .from("weekly_schedules")
+        .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
+        .eq("is_holiday_pattern", true)
+        .limit(1)
+        .single() as {
+          data: {
+            day_of_week: number
+            start_time: string
+            end_time: string
+            is_holiday_pattern: boolean
+            break_start_time: string | null
+            break_end_time: string | null
+          } | null
+          error: { message: string } | null
+        }
+
+      if (scheduleError) {
+        // 祝日パターンが見つからない場合はスルー（activeSchedule = null）
+        console.warn("[GET /api/public/slots] Holiday schedule not found:", scheduleError)
+      } else {
+        activeSchedule = holidaySchedule
       }
+    } else {
+      // 平日: 該当曜日のis_holiday_pattern=falseを使用
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: weekdaySchedule, error: scheduleError } = await (supabase as any)
+        .from("weekly_schedules")
+        .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
+        .eq("day_of_week", dayOfWeek)
+        .eq("is_holiday_pattern", false)
+        .limit(1)
+        .single() as {
+          data: {
+            day_of_week: number
+            start_time: string
+            end_time: string
+            is_holiday_pattern: boolean
+            break_start_time: string | null
+            break_end_time: string | null
+          } | null
+          error: { message: string } | null
+        }
 
-    if (scheduleError) {
-      console.error("[GET /api/public/slots] Schedule error:", scheduleError)
-      return NextResponse.json(
-        { error: "スケジュール取得に失敗しました" },
-        { status: 500 }
-      )
-    }
-
-    // 適切なパターンのスケジュールを選択（祝日なら祝日パターン、そうでなければ平日パターン）
-    let activeSchedule = schedules?.find((s) => s.is_holiday_pattern === isHoliday)
-
-    // 該当パターンがなければ反対のパターンを試す
-    if (!activeSchedule) {
-      activeSchedule = schedules?.find((s) => s.is_holiday_pattern !== isHoliday)
+      if (scheduleError) {
+        console.warn("[GET /api/public/slots] Weekday schedule not found:", scheduleError)
+      } else {
+        activeSchedule = weekdaySchedule
+      }
     }
 
     // スケジュールがない場合は空配列を返す
