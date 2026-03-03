@@ -8,18 +8,18 @@
 ### 祝日対応 (HOLIDAY)
 
 - [x] **HOLIDAY-01**: 祝日は全曜日共通で1つの営業時間パターンを適用できる
-- [ ] **HOLIDAY-02**: 祝日かどうかを外部API（holidays-jp）で自動判定する
+- [x] **HOLIDAY-02**: 祝日かどうかを外部API（holidays-jp）で自動判定する
 - [x] **HOLIDAY-03**: 管理画面で祝日用の営業時間を設定できる
 
 ### 休憩時間 (BREAK)
 
-- [ ] **BREAK-01**: 曜日ごとに休憩時間（開始・終了）を設定できる
-- [ ] **BREAK-02**: 休憩時間中は予約スロットが表示されない
+- [x] **BREAK-01**: 曜日ごとに休憩時間（開始・終了）を設定できる
+- [x] **BREAK-02**: 休憩時間中は予約スロットが表示されない
 
 ### 予約自動完了 (AUTO)
 
-- [ ] **AUTO-01**: 予約終了30分後に自動的にステータスがcompletedになる
-- [ ] **AUTO-02**: サンキューメールはステータスがcompletedになった予約に送信される
+- [x] **AUTO-01**: 予約終了30分後に自動的にステータスがcompletedになる
+- [x] **AUTO-02**: サンキューメールはステータスがcompletedになった予約に送信される
 
 ## v2 Requirements
 
@@ -38,12 +38,12 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | HOLIDAY-01 | Phase 7 | Complete |
-| HOLIDAY-02 | Phase 7 | Pending |
+| HOLIDAY-02 | Phase 7 | Complete |
 | HOLIDAY-03 | Phase 7 | Complete |
-| BREAK-01 | Phase 7 | Pending |
-| BREAK-02 | Phase 7 | Pending |
-| AUTO-01 | Phase 7 | Pending |
-| AUTO-02 | Phase 7 | Pending |
+| BREAK-01 | Phase 7 | Complete |
+| BREAK-02 | Phase 7 | Complete |
+| AUTO-01 | Phase 7 | Complete |
+| AUTO-02 | Phase 7 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 7 total
