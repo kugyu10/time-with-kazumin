@@ -2,6 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScheduleForm } from "@/components/admin/forms/schedule-form"
+import { HolidayScheduleForm } from "@/components/admin/forms/holiday-schedule-form"
 import type { Schedule } from "@/lib/actions/admin/schedules"
 
 type SchedulesClientProps = {
@@ -37,11 +38,10 @@ export function SchedulesClient({
         <div className="rounded-lg border bg-card p-6">
           <h2 className="text-lg font-semibold mb-4">祝日パターン</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            祝日営業日のスケジュールを設定します。祝日に営業する場合に使用します。
+            祝日は曜日に関係なく、この営業時間が適用されます。
           </p>
-          <ScheduleForm
-            initialSchedules={holidaySchedules}
-            isHolidayPattern={true}
+          <HolidayScheduleForm
+            initialSchedule={holidaySchedules[0] ?? null}
           />
         </div>
       </TabsContent>
