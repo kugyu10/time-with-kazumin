@@ -75,11 +75,12 @@ export async function GET(request: Request) {
       dates.push(`${year}-${month}-${day}`)
     }
 
-    // 全曜日のスケジュールを取得（平日・祝日両パターン）
+    // 全曜日のスケジュールを取得（平日パターン全曜日）
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: schedules, error: scheduleError } = await (supabase as any)
+    const { data: weekdaySchedules, error: weekdayError } = await (supabase as any)
       .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time") as {
+      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
+      .eq("is_holiday_pattern", false) as {
         data: Array<{
           day_of_week: number
           start_time: string
@@ -91,13 +92,35 @@ export async function GET(request: Request) {
         error: { message: string } | null
       }
 
-    if (scheduleError) {
-      console.error("[GET /api/public/slots/week] Schedule error:", scheduleError)
+    if (weekdayError) {
+      console.error("[GET /api/public/slots/week] Weekday schedule error:", weekdayError)
       return NextResponse.json(
         { error: "スケジュール取得に失敗しました" },
         { status: 500 }
       )
     }
+
+    // 祝日パターンを取得（1行のみ）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: holidaySchedule, error: holidayError } = await (supabase as any)
+      .from("weekly_schedules")
+      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
+      .eq("is_holiday_pattern", true)
+      .limit(1)
+      .single() as {
+        data: {
+          day_of_week: number
+          start_time: string
+          end_time: string
+          is_holiday_pattern: boolean
+          break_start_time: string | null
+          break_end_time: string | null
+        } | null
+        error: { message: string } | null
+      }
+
+    // 祝日スケジュールが見つからない場合はnullを許容
+    const holidayScheduleData = holidayError ? null : holidaySchedule
 
     // 週間の予約を取得
     const weekStart = `${dates[0]}T00:00:00`
@@ -148,24 +171,28 @@ export async function GET(request: Request) {
       // 祝日判定
       const isHoliday = await isJapaneseHoliday(date)
 
-      // 適切なパターンのスケジュールを取得（祝日なら祝日パターン、そうでなければ平日パターン）
-      const schedule = schedules?.find(
-        (s) => s.day_of_week === dayOfWeek && s.is_holiday_pattern === isHoliday
-      )
+      // スケジュール取得：祝日の場合は曜日無関係、平日は該当曜日
+      let activeSchedule: {
+        day_of_week: number
+        start_time: string
+        end_time: string
+        is_holiday_pattern: boolean
+        break_start_time: string | null
+        break_end_time: string | null
+      } | null = null
 
-      // 該当パターンがなければ反対のパターンを試す
-      const fallbackSchedule =
-        schedule ??
-        schedules?.find(
-          (s) => s.day_of_week === dayOfWeek && s.is_holiday_pattern !== isHoliday
-        )
+      if (isHoliday) {
+        // 祝日: 祝日パターンを使用（曜日無視）
+        activeSchedule = holidayScheduleData
+      } else {
+        // 平日: 該当曜日の平日パターンを使用
+        activeSchedule = weekdaySchedules?.find((s) => s.day_of_week === dayOfWeek) ?? null
+      }
 
-      if (!fallbackSchedule) {
+      if (!activeSchedule) {
         result[date] = []
         continue
       }
-
-      const activeSchedule = schedule ?? fallbackSchedule
 
       const slots: Slot[] = []
       const [startHour, startMin] = activeSchedule.start_time.split(":").map(Number)
