@@ -10,11 +10,15 @@ import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 // 設定キーの定義
 export const SETTING_KEYS = {
   BOOKING_MIN_HOURS_AHEAD: "booking_min_hours_ahead",
+  BUFFER_BEFORE_MINUTES: "buffer_before_minutes",
+  BUFFER_AFTER_MINUTES: "buffer_after_minutes",
 } as const
 
 // デフォルト値の定義
 const DEFAULT_VALUES: Record<string, string> = {
   [SETTING_KEYS.BOOKING_MIN_HOURS_AHEAD]: "24",
+  [SETTING_KEYS.BUFFER_BEFORE_MINUTES]: "30",
+  [SETTING_KEYS.BUFFER_AFTER_MINUTES]: "0",
 }
 
 /**
@@ -54,6 +58,24 @@ export async function getBookingMinHoursAhead(): Promise<number> {
   const value = await getAppSetting(SETTING_KEYS.BOOKING_MIN_HOURS_AHEAD)
   const parsed = Number(value)
   return isNaN(parsed) ? 24 : parsed
+}
+
+/**
+ * ミーティング前バッファ（分）を取得
+ */
+export async function getBufferBeforeMinutes(): Promise<number> {
+  const value = await getAppSetting(SETTING_KEYS.BUFFER_BEFORE_MINUTES)
+  const parsed = Number(value)
+  return isNaN(parsed) ? 30 : parsed
+}
+
+/**
+ * ミーティング後バッファ（分）を取得
+ */
+export async function getBufferAfterMinutes(): Promise<number> {
+  const value = await getAppSetting(SETTING_KEYS.BUFFER_AFTER_MINUTES)
+  const parsed = Number(value)
+  return isNaN(parsed) ? 0 : parsed
 }
 
 /**

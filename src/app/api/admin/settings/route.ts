@@ -11,6 +11,8 @@ import { getAppSettings, setAppSetting, SETTING_KEYS } from "@/lib/settings/app-
 // 取得対象のキー一覧
 const ALLOWED_KEYS: string[] = [
   SETTING_KEYS.BOOKING_MIN_HOURS_AHEAD,
+  SETTING_KEYS.BUFFER_BEFORE_MINUTES,
+  SETTING_KEYS.BUFFER_AFTER_MINUTES,
 ]
 
 /**
@@ -85,6 +87,17 @@ export async function PUT(request: Request) {
       if (isNaN(numValue) || numValue < 0 || numValue > 168) {
         return NextResponse.json(
           { error: "予約可能時間は0〜168時間の範囲で設定してください" },
+          { status: 400 }
+        )
+      }
+    }
+
+    // バッファ設定のバリデーション（0〜120分）
+    if (key === SETTING_KEYS.BUFFER_BEFORE_MINUTES || key === SETTING_KEYS.BUFFER_AFTER_MINUTES) {
+      const numValue = Number(value)
+      if (isNaN(numValue) || numValue < 0 || numValue > 120) {
+        return NextResponse.json(
+          { error: "バッファ時間は0〜120分の範囲で設定してください" },
           { status: 400 }
         )
       }

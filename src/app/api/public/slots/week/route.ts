@@ -9,7 +9,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
-import { getBookingMinHoursAhead } from "@/lib/settings/app-settings"
+import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
 import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
 function getSupabase() {
@@ -30,17 +30,22 @@ interface Slot {
   available: boolean
 }
 
+/**
+ * busy時間との重複チェック（バッファ適用）
+ */
 function isSlotBusy(
   slotStart: Date,
   slotEnd: Date,
-  busyTimes: BusyTime[]
+  busyTimes: BusyTime[],
+  bufferBeforeMs: number = 0,
+  bufferAfterMs: number = 0
 ): boolean {
   return busyTimes.some((busy) => {
-    const busyStart = new Date(busy.start).getTime()
-    const busyEnd = new Date(busy.end).getTime()
+    const busyStartWithBuffer = new Date(busy.start).getTime() - bufferBeforeMs
+    const busyEndWithBuffer = new Date(busy.end).getTime() + bufferAfterMs
     const slotStartTime = slotStart.getTime()
     const slotEndTime = slotEnd.getTime()
-    return slotStartTime < busyEnd && slotEndTime > busyStart
+    return slotStartTime < busyEndWithBuffer && slotEndTime > busyStartWithBuffer
   })
 }
 
@@ -160,6 +165,12 @@ export async function GET(request: Request) {
 
     // 設定取得（パラメータ指定がなければDB設定を使用）
     const bookingMinHoursAhead = customMinHoursAhead ?? await getBookingMinHoursAhead()
+    const bufferBeforeMinutes = await getBufferBeforeMinutes()
+    const bufferAfterMinutes = await getBufferAfterMinutes()
+
+    // バッファをミリ秒に変換
+    const bufferBeforeMs = bufferBeforeMinutes * 60 * 1000
+    const bufferAfterMs = bufferAfterMinutes * 60 * 1000
 
     // 各日のスロットを生成
     const result: Record<string, Slot[]> = {}
@@ -233,17 +244,19 @@ export async function GET(request: Request) {
         const slotStartISO = `${date}T${startTimeStr}:00+09:00`
         const slotEndISO = `${date}T${endTimeStr}:00+09:00`
 
+        // 既存予約との重複チェック（バッファ適用）
         const isBooked = existingBookings.some((booking) => {
-          const bookingStart = new Date(booking.start_time).getTime()
-          const bookingEnd = new Date(booking.end_time).getTime()
+          const bookingStartWithBuffer = new Date(booking.start_time).getTime() - bufferBeforeMs
+          const bookingEndWithBuffer = new Date(booking.end_time).getTime() + bufferAfterMs
           const slotStart = new Date(slotStartISO).getTime()
           const slotEnd = new Date(slotEndISO).getTime()
-          return slotStart < bookingEnd && slotEnd > bookingStart
+          return slotStart < bookingEndWithBuffer && slotEnd > bookingStartWithBuffer
         })
 
+        // Google Calendarのbusy時間との重複チェック（バッファ適用）
         const slotStartDate = new Date(slotStartISO)
         const slotEndDate = new Date(slotEndISO)
-        const isBusy = isSlotBusy(slotStartDate, slotEndDate, busyTimes)
+        const isBusy = isSlotBusy(slotStartDate, slotEndDate, busyTimes, bufferBeforeMs, bufferAfterMs)
 
         const minBookingTime = new Date()
         minBookingTime.setHours(minBookingTime.getHours() + bookingMinHoursAhead)

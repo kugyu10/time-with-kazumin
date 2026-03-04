@@ -1,9 +1,13 @@
 /**
  * Email Service Integration with Resend
  * Sends booking confirmations and cancellations using React Email templates
+ *
+ * Note: Due to React 19.2.x compatibility issues with @react-email/render (GitHub Issue #2521),
+ * we manually render React components to HTML strings instead of using Resend's `react` property.
  */
 
 import { Resend } from "resend"
+import { render } from "@react-email/render"
 import { BookingConfirmation, type BookingConfirmationProps } from "@/emails/BookingConfirmation"
 import { BookingCancellation, type BookingCancellationProps } from "@/emails/BookingCancellation"
 
@@ -110,6 +114,10 @@ export async function sendBookingConfirmationEmail(
     isAdminCopy: true,
   }
 
+  // Render React components to HTML strings (workaround for React 19.2.x compatibility)
+  const userHtml = await render(BookingConfirmation(userProps))
+  const adminHtml = adminEmail ? await render(BookingConfirmation(adminProps)) : null
+
   // Send emails in parallel (use allSettled to handle partial failures)
   const [userResult, adminResult] = await Promise.allSettled([
     // User email
@@ -117,16 +125,16 @@ export async function sendBookingConfirmationEmail(
       from: fromEmail,
       to: userEmail,
       subject: `予約確定: ${sessionTitle}`,
-      react: BookingConfirmation(userProps),
+      html: userHtml,
     }),
 
     // Admin email (only if ADMIN_EMAIL is configured)
-    adminEmail
+    adminEmail && adminHtml
       ? resend.emails.send({
           from: fromEmail,
           to: adminEmail,
           subject: `[管理者通知] 新規予約: ${sessionTitle}`,
-          react: BookingConfirmation(adminProps),
+          html: adminHtml,
         })
       : Promise.resolve(null),
   ])
@@ -208,6 +216,10 @@ export async function sendBookingCancellationEmail(
     isAdminCopy: true,
   }
 
+  // Render React components to HTML strings (workaround for React 19.2.x compatibility)
+  const userHtml = await render(BookingCancellation(userProps))
+  const adminHtml = adminEmail ? await render(BookingCancellation(adminProps)) : null
+
   // Send emails in parallel (use allSettled to handle partial failures)
   const [userResult, adminResult] = await Promise.allSettled([
     // User email
@@ -215,16 +227,16 @@ export async function sendBookingCancellationEmail(
       from: fromEmail,
       to: userEmail,
       subject: `予約キャンセル: ${sessionTitle}`,
-      react: BookingCancellation(userProps),
+      html: userHtml,
     }),
 
     // Admin email (only if ADMIN_EMAIL is configured)
-    adminEmail
+    adminEmail && adminHtml
       ? resend.emails.send({
           from: fromEmail,
           to: adminEmail,
           subject: `[管理者通知] 予約キャンセル: ${sessionTitle}`,
-          react: BookingCancellation(adminProps),
+          html: adminHtml,
         })
       : Promise.resolve(null),
   ])
