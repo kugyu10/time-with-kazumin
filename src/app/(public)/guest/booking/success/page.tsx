@@ -159,16 +159,16 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
               <dd className="text-gray-900">{booking.guest_name}</dd>
             </div>
             {booking.zoom_join_url && (
-              <div className="flex">
-                <dt className="w-24 text-gray-500">Zoom</dt>
-                <dd className="text-gray-900">
+              <div className="flex flex-col gap-1">
+                <dt className="text-gray-500">Zoom URL</dt>
+                <dd className="text-gray-900 break-all">
                   <a
                     href={booking.zoom_join_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                    className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
                   >
-                    ミーティングに参加
+                    {booking.zoom_join_url}
                   </a>
                 </dd>
               </div>
