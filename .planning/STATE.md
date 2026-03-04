@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 Milestone: v1.1 営業時間拡張 — SHIPPED
 Phase: All complete (7 phases)
 Status: Shipped
-Last activity: 2026-03-03 — v1.1 milestone completed
+Last activity: 2026-03-04 — Completed quick task 3: メールを有効化
 
 Progress: [██████████] 100%
 
@@ -159,6 +159,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 1 | ログインしている人がadminなら、ヘッダーに管理画面へリンクを表示 | 2026-03-01 | 6637760 | [1-admin](./quick/1-admin/) |
 | 2 | カジュアル30分セッション→発光ポジティブちょい浴び30分 文言変更 | 2026-03-02 | 90483db | - |
+| 3 | メールを有効化（FROM_EMAILをカスタムドメインに変更） | 2026-03-04 | 35b792d | [3-enable-email](./quick/3-enable-email/) |
 
 **Phase 1 Critical Risks: RESOLVED**
 - ポイント二重消費リスク: SELECT FOR UPDATE NOWAITをconsume_points()に実装
