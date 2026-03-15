@@ -139,7 +139,7 @@ Plans:
 
 - [x] **Phase 8: バグ修正** - Zoom・タイムゾーン・メール・カレンダーの本番バグを一括解消 (completed 2026-03-15)
 - [x] **Phase 9: Playwright基盤** - E2Eテスト環境構築（Vercel preview + Supabase dev統合） (completed 2026-03-15)
-- [ ] **Phase 10: テストシナリオ** - ゲスト・会員予約フローのE2Eテスト実装
+- [x] **Phase 10: テストシナリオ** - ゲスト・会員予約フローのE2Eテスト実装 (completed 2026-03-15)
 - [ ] **Phase 11: CI統合** - GitHub ActionsによるE2E自動実行パイプライン
 
 ## Phase Details
@@ -222,5 +222,5 @@ Phases execute in numeric order: 8 → 9 → 10 → 11
 | 7. 営業時間拡張 | v1.1 | 1/1 | Complete | 2026-03-03 |
 | 8. バグ修正 | 2/2 | Complete   | 2026-03-15 | - |
 | 9. Playwright基盤 | 2/2 | Complete   | 2026-03-15 | - |
-| 10. テストシナリオ | 1/2 | In Progress|  | - |
+| 10. テストシナリオ | 2/2 | Complete   | 2026-03-15 | - |
 | 11. CI統合 | v1.2 | 0/1 | Not started | - |

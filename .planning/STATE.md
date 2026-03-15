@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: Completed 10-test-scenarios-01-PLAN.md
-last_updated: "2026-03-15T14:20:04.377Z"
+stopped_at: Completed 10-test-scenarios-02-PLAN.md
+last_updated: "2026-03-15T14:24:40.560Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 22
-  completed_plans: 21
+  completed_plans: 22
   percent: 0
 ---
 
@@ -66,6 +66,7 @@ Progress: [          ] 0%
 | Phase 09-playwright-foundation P01 | 4 | 2 tasks | 7 files |
 | Phase 09-playwright-foundation P02 | checkpoint | 3 tasks | 4 files |
 | Phase 10-test-scenarios P01 | 5 | 2 tasks | 2 files |
+| Phase 10-test-scenarios P02 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,8 @@ Recent decisions affecting current work:
 - [Phase 09-playwright-foundation]: 管理者ユーザーもログイン後は/bookings/newにリダイレクト（LoginForm実装の動作）
 - [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: Server Component E2E検証はglobal-setupでDB実データ挿入後に直接URLアクセスするパターンを採用（page.route()不可のため）
 - [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: cancel_tokenをglobal-setupで生成しe2e-tokens.jsonに書き出す設計（テストファイルにトークン生成ロジック不要）
+- [Phase 10-test-scenarios]: memberPage フィクスチャは storageState で認証済みなため、テスト内でログイン操作は不要（KISS原則）
+- [Phase 10-test-scenarios]: ポイント残高変化テストはモック環境で不可のため、global-setup で設定した 100 ポイントの表示確認に留める
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -154,7 +157,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T14:20:04.373Z
-Stopped at: Completed 10-test-scenarios-01-PLAN.md
+Last session: 2026-03-15T14:24:40.557Z
+Stopped at: Completed 10-test-scenarios-02-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`
