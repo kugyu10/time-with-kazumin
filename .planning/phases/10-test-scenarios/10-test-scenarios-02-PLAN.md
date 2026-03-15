@@ -153,9 +153,9 @@ LoginPage (/login):
 - memberPage は storageState で認証済みなので、ログイン操作は不要
   </action>
   <verify>
-    <automated>cd /Users/kugyu10/work/かずみん/Time-with-Kazumin && test -f e2e/specs/auth.spec.ts && grep -c "from.*fixtures" e2e/specs/auth.spec.ts</automated>
+    <automated>cd /Users/kugyu10/work/かずみん/Time-with-Kazumin && test -f e2e/specs/auth.spec.ts && grep -c "from.*fixtures" e2e/specs/auth.spec.ts && npx playwright test e2e/specs/auth.spec.ts --project=chromium 2>&1 | tail -5</automated>
   </verify>
-  <done>auth.spec.ts が存在し、fixtures.ts から import している。認証済み/未認証の両方のテストケースがある。</done>
+  <done>auth.spec.ts が存在し、fixtures.ts から import している。認証済み/未認証の両方のテストケースがある。テストが実行可能。</done>
 </task>
 
 <task type="auto">
@@ -223,9 +223,9 @@ LoginPage (/login):
 - **最もシンプルなアプローチ:** テスト DB に実データが存在する前提。DB にメニューが1件もなければ「メニューを選択」の下にメニューカードが表示されない → テストが失敗する → これは期待通りの動作（テスト環境の問題として検出される）
   </action>
   <verify>
-    <automated>cd /Users/kugyu10/work/かずみん/Time-with-Kazumin && test -f e2e/specs/member-booking.spec.ts && grep -c "memberPage" e2e/specs/member-booking.spec.ts</automated>
+    <automated>cd /Users/kugyu10/work/かずみん/Time-with-Kazumin && test -f e2e/specs/member-booking.spec.ts && grep -c "memberPage" e2e/specs/member-booking.spec.ts && npx playwright test e2e/specs/member-booking.spec.ts --project=chromium 2>&1 | tail -5</automated>
   </verify>
-  <done>member-booking.spec.ts が存在し、memberPage フィクスチャを使用している。メニュー選択→スロット選択→確認→ダッシュボード遷移のテストと、ポイント残高表示テストが記述されている。外部 API（/api/bookings POST）は page.route() でモック化されている。</done>
+  <done>member-booking.spec.ts が存在し、memberPage フィクスチャを使用している。メニュー選択→スロット選択→確認→ダッシュボード遷移のテストと、ポイント残高表示テストが記述されている。外部 API（/api/bookings POST）は page.route() でモック化されている。テストが実行可能。</done>
 </task>
 
 </tasks>
@@ -235,7 +235,7 @@ LoginPage (/login):
 - `grep "from.*fixtures" e2e/specs/auth.spec.ts e2e/specs/member-booking.spec.ts` で fixtures から import していること
 - `grep "memberPage" e2e/specs/member-booking.spec.ts` で memberPage フィクスチャ使用を確認
 - `grep "page.route" e2e/specs/member-booking.spec.ts` で page.route() モックが設定されていること
-- `npm run test:e2e` で全テスト実行（.env.test 設定済み + テスト DB にデータがある場合）
+- `npx playwright test e2e/specs/auth.spec.ts e2e/specs/member-booking.spec.ts --project=chromium` でテスト実行
 </verification>
 
 <success_criteria>
@@ -244,7 +244,7 @@ LoginPage (/login):
 - 両ファイルとも `../fixtures` から test/expect を import している
 - /api/bookings POST が page.route() でモック化されている
 - ポイント残高の表示テストが含まれている
-- `npm run test:e2e` で全テスト実行可能
+- `npx playwright test --project=chromium` で全テスト実行可能
 </success_criteria>
 
 <output>
