@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: Completed 08-bug-fixes-02-PLAN.md
-last_updated: "2026-03-15T06:44:43.852Z"
+stopped_at: Completed 09-playwright-foundation-01-PLAN.md
+last_updated: "2026-03-15T11:35:59.883Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
   completed_phases: 8
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 20
+  completed_plans: 19
   percent: 0
 ---
 
@@ -63,6 +63,7 @@ Progress: [          ] 0%
 *Updated after each plan completion*
 | Phase 08-bug-fixes P01 | 3 | 3 tasks | 3 files |
 | Phase 08-bug-fixes P02 | 40 | 4 tasks | 9 files |
+| Phase 09-playwright-foundation P01 | 4 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase 08-bug-fixes]: sendWelcomeEmailは非ブロッキング: 失敗しても会員作成は成功扱い（Resendメール送信ポリシーを踏襲）
 - [Phase 08-bug-fixes]: date-fnsのformat()はtimeZone非対応のため日時フォーマットでは使用禁止（YAGNI: date-fns-tz追加せず）
 - [Phase 08-bug-fixes]: 全日時表示でtimeZone: 'Asia/Tokyo'を必須指定（Vercel環境はUTCで動作するため）
+- [Phase 09-playwright-foundation]: global-setup.ts/global-teardown.ts スタブ作成: npx playwright test --list が通るようにするためのRule 3自動修正（09-02で実装）
+- [Phase 09-playwright-foundation]: .env.test.example を .gitignore の !除外対象に追加: .env.* パターンとの衝突を解消
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -145,7 +148,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T06:44:43.849Z
-Stopped at: Completed 08-bug-fixes-02-PLAN.md
+Last session: 2026-03-15T11:35:59.880Z
+Stopped at: Completed 09-playwright-foundation-01-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`

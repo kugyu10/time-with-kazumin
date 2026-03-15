@@ -15,7 +15,7 @@
 
 ### E2Eテスト
 
-- [ ] **E2E-01**: Playwright環境が構築され、Vercel preview（developブランチ）+ Supabase dev環境を対象にテストが実行できる
+- [x] **E2E-01**: Playwright環境が構築され、Vercel preview（developブランチ）+ Supabase dev環境を対象にテストが実行できる
 - [ ] **E2E-02**: ゲスト予約フロー（閲覧→予約→キャンセル）のE2Eテストが通る
 - [ ] **E2E-03**: 会員ログインフロー（メール/パスワード）のE2Eテストが通る
 - [ ] **E2E-04**: 会員予約フロー（メニュー選択→ポイント消費→予約）のE2Eテストが通る
@@ -46,7 +46,7 @@
 | BUG-03 | Phase 8 | Complete |
 | BUG-04 | Phase 8 | Complete |
 | BUG-05 | Phase 8 | Complete |
-| E2E-01 | Phase 9 | Pending |
+| E2E-01 | Phase 9 | Complete |
 | E2E-02 | Phase 10 | Pending |
 | E2E-03 | Phase 10 | Pending |
 | E2E-04 | Phase 10 | Pending |

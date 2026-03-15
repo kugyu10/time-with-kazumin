@@ -221,6 +221,6 @@ Phases execute in numeric order: 8 → 9 → 10 → 11
 | 6. 自動化タスク | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 7. 営業時間拡張 | v1.1 | 1/1 | Complete | 2026-03-03 |
 | 8. バグ修正 | 2/2 | Complete   | 2026-03-15 | - |
-| 9. Playwright基盤 | v1.2 | 0/2 | Not started | - |
+| 9. Playwright基盤 | 1/2 | In Progress|  | - |
 | 10. テストシナリオ | v1.2 | 0/2 | Not started | - |
 | 11. CI統合 | v1.2 | 0/1 | Not started | - |
