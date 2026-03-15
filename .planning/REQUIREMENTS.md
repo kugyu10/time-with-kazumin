@@ -1,55 +1,62 @@
 # Requirements: Time with Kazumin
 
-**Defined:** 2026-03-03
+**Defined:** 2026-03-15
 **Core Value:** 気軽にかずみんに会いに行ける予約体験
 
-## v1.1 Requirements
+## v1.2 Requirements
 
-### 祝日対応 (HOLIDAY)
+### バグ修正
 
-- [x] **HOLIDAY-01**: 祝日は全曜日共通で1つの営業時間パターンを適用できる
-- [x] **HOLIDAY-02**: 祝日かどうかを外部API（holidays-jp）で自動判定する
-- [x] **HOLIDAY-03**: 管理画面で祝日用の営業時間を設定できる
+- [ ] **BUG-01**: キャンセル時にZoom側の会議が確実に削除される（GitHub #1）
+- [ ] **BUG-02**: `/booking/[id]` の予約詳細画面の時刻がJSTで表示される（GitHub #2）
+- [ ] **BUG-03**: 全画面でJST表示を統一し、UTC/JST変換コード規約を `docs/rules.md` に明文化する（GitHub #2 横展開）
+- [ ] **BUG-04**: 会員招待完了後にウェルカムメールが送信される（GitHub #3）
+- [ ] **BUG-05**: 管理者Googleカレンダーの予定がスロットに正確にブロックされる（GitHub #4）
 
-### 休憩時間 (BREAK)
+### E2Eテスト
 
-- [x] **BREAK-01**: 曜日ごとに休憩時間（開始・終了）を設定できる
-- [x] **BREAK-02**: 休憩時間中は予約スロットが表示されない
+- [ ] **E2E-01**: Playwright環境が構築され、Vercel preview（developブランチ）+ Supabase dev環境を対象にテストが実行できる
+- [ ] **E2E-02**: ゲスト予約フロー（閲覧→予約→キャンセル）のE2Eテストが通る
+- [ ] **E2E-03**: 会員ログインフロー（メール/パスワード）のE2Eテストが通る
+- [ ] **E2E-04**: 会員予約フロー（メニュー選択→ポイント消費→予約）のE2Eテストが通る
+- [ ] **E2E-05**: GitHub ActionsでE2EテストがVercel preview URL向けに自動実行される
 
-### 予約自動完了 (AUTO)
+## Future Requirements
 
-- [x] **AUTO-01**: 予約終了30分後に自動的にステータスがcompletedになる
-- [x] **AUTO-02**: サンキューメールはステータスがcompletedになった予約に送信される
+### 管理者E2Eテスト
 
-## v2 Requirements
-
-(None planned)
+- **E2E-ADM-01**: 管理者ログインフロー
+- **E2E-ADM-02**: 管理者予約管理フロー
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| 祝日の手動登録 | 外部APIで自動判定するため不要 |
-| 複数休憩時間/曜日 | 1つで十分、複雑さ回避 |
-| 予約完了の手動トリガー | 自動完了で十分 |
+| Google OAuth E2Eテスト | Bot検出・ToS違反リスク。メール/パスワード認証でカバー |
+| 外部API（Zoom/Calendar/Resend）の実呼び出しテスト | 環境変数フラグによるスタブ切り替えで代替 |
+| ローカル開発サーバーE2E | 環境差分を排除するためVercel preview環境に統一。ローカル品質はUT（Vitest等）で担保 |
+| ユニットテスト導入 | 別途計画（v1.3候補） |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOLIDAY-01 | Phase 7 | Complete |
-| HOLIDAY-02 | Phase 7 | Complete |
-| HOLIDAY-03 | Phase 7 | Complete |
-| BREAK-01 | Phase 7 | Complete |
-| BREAK-02 | Phase 7 | Complete |
-| AUTO-01 | Phase 7 | Complete |
-| AUTO-02 | Phase 7 | Complete |
+| BUG-01 | Phase 8 | Pending |
+| BUG-02 | Phase 8 | Pending |
+| BUG-03 | Phase 8 | Pending |
+| BUG-04 | Phase 8 | Pending |
+| BUG-05 | Phase 8 | Pending |
+| E2E-01 | Phase 9 | Pending |
+| E2E-02 | Phase 9 | Pending |
+| E2E-03 | Phase 9 | Pending |
+| E2E-04 | Phase 9 | Pending |
+| E2E-05 | Phase 9 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 7 total
-- Mapped to phases: 7
+- v1.2 requirements: 10 total
+- Mapped to phases: 10
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after initial definition*
+*Requirements defined: 2026-03-15*
+*Last updated: 2026-03-15 after initial definition*
