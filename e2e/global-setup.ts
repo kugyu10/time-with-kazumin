@@ -126,7 +126,7 @@ export default async function globalSetup() {
       .eq('guest_token', 'e2e-test-guest-token')
     bookingId = existingBooking.id
   } else {
-    const { data: insertedBooking } = await supabase
+    const { data: insertedBooking, error: insertError } = await supabase
       .from('bookings')
       .insert({
         guest_token: 'e2e-test-guest-token',
@@ -141,7 +141,11 @@ export default async function globalSetup() {
       })
       .select('id')
       .single()
-    bookingId = insertedBooking!.id
+    if (insertError || !insertedBooking) {
+      console.warn('[global-setup] ゲスト予約レコードの挿入に失敗しました:', insertError?.message)
+      return
+    }
+    bookingId = insertedBooking.id
   }
 
   // cancel_token 生成
