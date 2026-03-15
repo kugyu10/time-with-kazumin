@@ -167,6 +167,112 @@ describe("Zoom Integration", () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
+    it("should call account A API when accountType A is specified", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id-a")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id-a")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret-a")
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              access_token: "test-access-token-a",
+              token_type: "bearer",
+              expires_in: 3600,
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 204,
+        })
+
+      const result = await deleteZoomMeeting("meeting-123", "A")
+
+      expect(result.success).toBe(true)
+      // アカウントAのトークンエンドポイントが呼ばれたことを確認
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://zoom.us/oauth/token",
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: expect.stringContaining("Basic "),
+          }),
+        })
+      )
+    })
+
+    it("should try account A then B when accountType is not specified", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id-a")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id-a")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret-a")
+      vi.stubEnv("ZOOM_ACCOUNT_B_ACCOUNT_ID", "account-id-b")
+      vi.stubEnv("ZOOM_ACCOUNT_B_CLIENT_ID", "client-id-b")
+      vi.stubEnv("ZOOM_ACCOUNT_B_CLIENT_SECRET", "client-secret-b")
+
+      mockFetch
+        // アカウントAのトークン取得
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              access_token: "token-a",
+              token_type: "bearer",
+              expires_in: 3600,
+            }),
+        })
+        // アカウントAでの削除 → 404（見つからない）
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        // アカウントBのトークン取得
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              access_token: "token-b",
+              token_type: "bearer",
+              expires_in: 3600,
+            }),
+        })
+        // アカウントBでの削除 → 成功
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 204,
+        })
+
+      const result = await deleteZoomMeeting("meeting-123")
+
+      expect(result.success).toBe(true)
+      // A→Bの順でfetchが4回呼ばれること（トークン×2 + 削除×2）
+      expect(mockFetch).toHaveBeenCalledTimes(4)
+    })
+
+    it("should return success true on 204 response", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              access_token: "test-access-token",
+              token_type: "bearer",
+              expires_in: 3600,
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 204,
+        })
+
+      const result = await deleteZoomMeeting("meeting-456", "A")
+
+      expect(result.success).toBe(true)
+    })
+
     it("should delete meeting successfully", async () => {
       vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
       vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
