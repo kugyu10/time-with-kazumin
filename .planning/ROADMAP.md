@@ -186,7 +186,7 @@ Plans:
   3. 会員がメール/パスワードでログインしてダッシュボードにリダイレクトされることをテストで検証できる
   4. 会員予約フロー（メニュー選択→ポイント消費→予約確定）のテストがパスし、ポイント残高の変化が確認できる
   5. Zoom/Google Calendar/Resend の実API呼び出しは `page.route()` でモック化されており、外部サービスに依存しない
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 10-01-PLAN.md — ゲスト予約フローE2Eテスト（booking-flow.spec.ts）、外部APIモック実装
