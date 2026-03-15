@@ -110,13 +110,16 @@ export default async function GuestBookingSuccessPage({ searchParams }: PageProp
     month: "long",
     day: "numeric",
     weekday: "long",
+    timeZone: "Asia/Tokyo",
   })
   const formattedTime = `${startDate.toLocaleTimeString("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Tokyo",
   })} - ${endDate.toLocaleTimeString("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Tokyo",
   })}`
 
   return (

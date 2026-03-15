@@ -10,6 +10,7 @@ import { Resend } from "resend"
 import { render } from "@react-email/render"
 import { BookingConfirmation, type BookingConfirmationProps } from "@/emails/BookingConfirmation"
 import { BookingCancellation, type BookingCancellationProps } from "@/emails/BookingCancellation"
+import { WelcomeEmail } from "@/emails/WelcomeEmail"
 
 // Lazy initialization to avoid build-time errors
 let resendClient: Resend | null = null
@@ -63,6 +64,11 @@ export interface SendBookingConfirmationParams {
 export interface SendEmailResult {
   userEmailSent: boolean
   adminEmailSent: boolean
+}
+
+export interface SendWelcomeEmailResult {
+  success: boolean
+  error?: string
 }
 
 /**
@@ -263,3 +269,45 @@ export async function sendBookingCancellationEmail(
   }
 }
 
+export interface SendWelcomeEmailParams {
+  userEmail: string
+  userName: string
+  passwordResetUrl: string | null
+}
+
+/**
+ * Send welcome email to new member
+ * Sends password reset link so the member can set their own password
+ */
+export async function sendWelcomeEmail(
+  params: SendWelcomeEmailParams
+): Promise<SendWelcomeEmailResult> {
+  if (!isEmailConfigured()) {
+    console.warn("[Email] Resend not configured, skipping welcome email send")
+    return { success: false }
+  }
+
+  const resend = getResendClient()
+  if (!resend || !process.env.FROM_EMAIL) {
+    return { success: false }
+  }
+
+  const { userEmail, userName, passwordResetUrl } = params
+  const fromEmail = process.env.FROM_EMAIL
+
+  const html = await render(WelcomeEmail({ userName, passwordResetUrl }))
+
+  try {
+    await resend.emails.send({
+      from: fromEmail,
+      to: userEmail,
+      subject: "「かずみん時間」へようこそ！",
+      html,
+    })
+    console.log("[Email] Welcome email sent:", userEmail)
+    return { success: true }
+  } catch (error) {
+    console.error("[Email] Welcome email failed:", error)
+    return { success: false, error: String(error) }
+  }
+}

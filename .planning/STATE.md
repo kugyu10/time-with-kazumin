@@ -1,42 +1,45 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: 営業時間拡張
-status: shipped
-last_updated: "2026-03-03T12:45:00.000Z"
+milestone: v1.2
+milestone_name: 安定化
+status: planning
+stopped_at: Completed 10-test-scenarios-02-PLAN.md
+last_updated: "2026-03-15T14:24:40.560Z"
+last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
+  total_phases: 11
+  completed_phases: 10
+  total_plans: 22
+  completed_plans: 22
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-03)
+See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Planning next milestone
+**Current focus:** v1.2 安定化 — バグ修正とE2Eテスト導入
 
 ## Current Position
 
-Milestone: v1.1 営業時間拡張 — SHIPPED
-Phase: All complete (7 phases)
-Status: Shipped
-Last activity: 2026-03-04 — Completed quick task 3: メールを有効化
+Milestone: v1.2 安定化
+Phase: Phase 8（バグ修正）— Not started
+Status: Roadmap defined, ready for planning
+Last activity: 2026-03-15 — Roadmap created for v1.2
 
-Progress: [██████████] 100%
+Progress: [          ] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 16 (v1.0〜v1.1)
 - Average duration: ~7 min
 - Total execution time: ~117 min
 
-**By Phase:**
+**By Phase (historical):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -48,13 +51,22 @@ Progress: [██████████] 100%
 | Phase 6 | 2/2 | ~11min | ~5.5min |
 | Phase 7 | 1/1 | ~2min | ~2min |
 
-**Recent Trend:**
-- Last 5 plans: 05-03 ✓, 06-01 ✓, 06-02 ✓, 07-01 ✓
-- Trend: Excellent velocity (~2-7min/plan)
+**v1.2 Phases (not started):**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| Phase 8 | 0/2 | - | - |
+| Phase 9 | 0/2 | - | - |
+| Phase 10 | 0/2 | - | - |
+| Phase 11 | 0/1 | - | - |
 
 *Updated after each plan completion*
-| Phase 06 P02 | 6min | 4 tasks | 10 files |
-| Phase 07 P01 | 2 | 5 tasks | 5 files |
+| Phase 08-bug-fixes P01 | 3 | 3 tasks | 3 files |
+| Phase 08-bug-fixes P02 | 40 | 4 tasks | 9 files |
+| Phase 09-playwright-foundation P01 | 4 | 2 tasks | 7 files |
+| Phase 09-playwright-foundation P02 | checkpoint | 3 tasks | 4 files |
+| Phase 10-test-scenarios P01 | 5 | 2 tasks | 2 files |
+| Phase 10-test-scenarios P02 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,74 +96,38 @@ Recent decisions affecting current work:
 - [Phase 06]: Edge FunctionsからResend API直接呼び出し: Next.js経由せずDeno runtimeから直接fetch
 - [Phase 06]: HTMLテンプレート手動生成: React Email renderはサーバーサイド専用のためEdge Function内でHTML文字列を直接生成
 - [Phase 07]: 祝日パターンは day_of_week=0 の1行で管理（曜日無視）
+- [Phase 08-bug-fixes]: Zoom削除のaccountTypeはmeeting_menus.zoom_accountから取得（DBクエリ失敗時はデフォルト'A'）
+- [Phase 08-bug-fixes]: BUG-05はコードロジック正常のため診断ログ強化のみ実施（OAuth設定・GOOGLE_CALENDAR_ID確認用）
+- [Phase 08-bug-fixes]: sendWelcomeEmailは非ブロッキング: 失敗しても会員作成は成功扱い（Resendメール送信ポリシーを踏襲）
+- [Phase 08-bug-fixes]: date-fnsのformat()はtimeZone非対応のため日時フォーマットでは使用禁止（YAGNI: date-fns-tz追加せず）
+- [Phase 08-bug-fixes]: 全日時表示でtimeZone: 'Asia/Tokyo'を必須指定（Vercel環境はUTCで動作するため）
+- [Phase 09-playwright-foundation]: global-setup.ts/global-teardown.ts スタブ作成: npx playwright test --list が通るようにするためのRule 3自動修正（09-02で実装）
+- [Phase 09-playwright-foundation]: .env.test.example を .gitignore の !除外対象に追加: .env.* パターンとの衝突を解消
+- [Phase 09-playwright-foundation]: requireAdmin()はprofilesテーブルのroleカラムで判定するため、global-setupではauth.admin.createUser()後にprofilesテーブルへupsertが必要
+- [Phase 09-playwright-foundation]: 管理者ユーザーもログイン後は/bookings/newにリダイレクト（LoginForm実装の動作）
+- [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: Server Component E2E検証はglobal-setupでDB実データ挿入後に直接URLアクセスするパターンを採用（page.route()不可のため）
+- [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: cancel_tokenをglobal-setupで生成しe2e-tokens.jsonに書き出す設計（テストファイルにトークン生成ロジック不要）
+- [Phase 10-test-scenarios]: memberPage フィクスチャは storageState で認証済みなため、テスト内でログイン操作は不要（KISS原則）
+- [Phase 10-test-scenarios]: ポイント残高変化テストはモック環境で不可のため、global-setup で設定した 100 ポイントの表示確認に留める
 
-### Phase 2 Implementation Summary
+### v1.2 E2E Decisions (pre-decided from research)
 
-**認証基盤 (02-01):**
-- Supabaseクライアント3パターン: client.ts, server.ts, middleware.ts
-- Google OAuth + メール/パスワード認証
-- 招待制チェック（profilesテーブル存在確認）
-- ミドルウェアによる保護ページガード
-
-**予約作成 (02-02):**
-- Sagaオーケストレーター（8ステップ、補償トランザクション付き）
-- 冪等性キー管理（idempotency_keysテーブル）
-- モック外部API（Zoom, Google Calendar, Email）
-- 予約フローUI（メニュー選択→スロット選択→確認→完了）
-- ポイント残高表示（ヘッダー+ダッシュボード）
-
-**予約一覧・キャンセル (02-03):**
-- 「今後」「過去」タブ切り替え
-- 予約詳細ページ（キャンセルボタン付き）
-- キャンセル時のポイント返還（refund_points RPC）
-
-### Phase 3 Implementation Summary
-
-**ゲスト予約基盤 (03-01):**
-- service_roleクライアント（RLSバイパス、遅延初期化）
-- LRUキャッシュベースのレート制限（IP+email複合キー）
-- ゲスト入力バリデーション（validator使用）
-- GET /api/public/slots: 空きスロット取得API
-- POST /api/guest/bookings: ゲスト予約作成API
-- ゲスト予約フローUI（SlotPicker再利用）
-
-**キャンセルとカレンダー追加 (03-02):**
-- JWTキャンセルトークン（jose、HS256、7日有効期限）
-- Googleカレンダー追加URL生成
-- DELETE /api/guest/cancel/[token]: キャンセルAPI
-- 予約完了ページ（詳細、カレンダー追加、キャンセルリンク）
-- キャンセルページ（トークン検証、状態別表示、確認ダイアログ）
-
-### Phase 4 Implementation Summary (Complete)
-
-**Google Calendar OAuth統合 (04-01):**
-- oauth_tokensテーブル（pgcrypto pgp_sym_encrypt暗号化）
-- Google OAuth 2.0認証フロー（access_type: offline, prompt: consent）
-- 'tokens'イベントでリフレッシュトークン自動更新
-- FreeBusy APIでbusy時間取得
-- 15分TTLキャッシュでAPI呼び出し削減
-- 指数バックオフリトライユーティリティ
-- 空きスロットAPIがbusy時間を反映
-
-**Zoom・Calendar・Email統合 (04-02):**
-- Zoom Server-to-Server OAuth（アカウントA/B対応）
-- meeting_menus.zoom_accountカラムでアカウント切り替え
-- Resend + React Email（BookingConfirmationテンプレート）
-- Sagaの本実装版拡張（Zoom/Calendar/Email統合）
-- キャンセルURL・GoogleカレンダーURL付きメール送信
-
-**キャンセルフロー拡張 (04-03):**
-- cancelBookingオーケストレーター本実装化
-- Zoom会議削除、Googleカレンダーイベント削除の統合
-- BookingCancellation React Emailテンプレート
-- 会員・ゲスト両対応キャンセルフロー
-- 外部API失敗時の非ブロッキング処理
+- Playwright 1.58.2採用: Next.js公式推奨、CI並列実行無料、storageState認証再利用対応
+- Google OAuth E2E自動化は対象外: Bot検出・ToS違反リスク。メール/パスワード認証でカバー
+- `workers: 1`でシリアル実行: Supabase dev環境の接続数制限による並列テスト干渉を防止
+- Vercel preview対象: develop環境のデプロイ保護設定を確認・無効化が必要（Phase 9実装前）
+- 外部API（Zoom/Calendar/Resend）は `page.route()` でモック化: クォータ消費と外部依存を回避
+- patrickedqvist/wait-for-vercel-preview@v1.3.3: CI統合でVercel Preview URL自動取得
 
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
+
+- Phase 9実装前: Vercel dashboardでdevelopブランチのDeployment Protection設定を確認する必要がある
+- Phase 9実装前: `/login` ページにメール/パスワードフォームが存在するか確認が必要（storageState取得戦略に影響）
+- Phase 9実装前: Supabase `app_metadata` への `role: 'admin'` 付与手順を確定する必要がある
 
 ### Quick Tasks Completed
 
@@ -179,55 +155,9 @@ None yet.
 - Google Calendar Rate Limit: 指数バックオフで対応済み（04-01）
 - 外部API削除失敗: 非ブロッキング処理でキャンセル成功を保証（04-03）
 
-### Phase 5 Implementation Summary (Complete)
-
-**管理画面基盤・メニュー・プランCRUD (05-01):**
-- 管理画面共通レイアウト（認証・認可チェック付き）
-- Admin Sidebarナビゲーション
-- TanStack Table統合DataTableコンポーネント
-- メニュー（meeting_menus）CRUD Server Actions
-- プラン（plans）CRUD Server Actions
-- shadcn/ui管理画面用コンポーネント群
-
-**営業時間設定、会員管理、ポイント調整 (05-02):**
-- 営業時間設定UI（週間スケジュール）
-- 会員一覧・検索・編集機能
-- ポイント手動調整機能（manual_adjust_points RPC）
-
-**管理者予約管理機能 (05-03):**
-- 予約一覧・フィルタ機能（会員/ゲスト両方表示）
-- ステータス変更（楽観的更新、useOptimistic）
-- 管理者キャンセル機能（cancelBookingオーケストレーター再利用）
-- isAdminフラグで権限チェックバイパス
-
-### Phase 6 Implementation Summary (Complete)
-
-**自動化タスクDB基盤 (06-01):**
-- task_execution_logsテーブル（タスク実行履歴記録）
-- bookingsにreminder_sent_at/thank_you_sent_atフラグ（重複送信防止）
-- meeting_menusにsend_thank_you_emailフラグ（メニューごとサンキューメールON/OFF）
-- React Emailテンプレート（BookingReminder, ThankYouEmail）
-- pg_cron拡張とジョブ定義（コメント化）
-- メニュー管理UIでサンキューメール設定可能
-
-**Edge Functions自動化タスク実装 (06-02):**
-- monthly-point-grant Edge Function（月次ポイント付与、冪等性チェック付き）
-- check-reminder-emails Edge Function（24時間前リマインダー自動送信）
-- check-thank-you-emails Edge Function（セッション終了後サンキューメール自動送信）
-- タスク実行履歴管理画面（/admin/tasks、フィルタ機能付き）
-- Resend API直接呼び出し（Deno runtime対応）
-
-### Phase 7 Implementation Summary (Complete)
-
-**祝日パターン全曜日共通化・管理画面UI修正 (07-01):**
-- 祝日専用フォームコンポーネント（HolidayScheduleForm）
-- 管理画面UIの祝日タブ修正（1つの営業時間フォームのみ表示）
-- updateHolidaySchedule Server Action（day_of_week=0で1行管理）
-- スロットAPI（単日版・週間版）で祝日判定時に曜日無視
-- 祝日は曜日に関係なく同一の営業時間を適用
-
 ## Session Continuity
 
-Last session: 2026-03-03
-Stopped at: Completed 07-01-PLAN.md (祝日パターン全曜日共通化・管理画面UI修正)
+Last session: 2026-03-15T14:24:40.557Z
+Stopped at: Completed 10-test-scenarios-02-PLAN.md
 Resume file: None
+Next step: `/gsd:plan-phase 8`

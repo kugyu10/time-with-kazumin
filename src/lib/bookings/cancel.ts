@@ -44,6 +44,7 @@ type BookingWithRelations = {
   meeting_menus: {
     name: string
     points_required: number
+    zoom_account: "A" | "B" | null
   } | null
 }
 
@@ -100,7 +101,8 @@ export async function cancelBooking(
         ),
         meeting_menus (
           name,
-          points_required
+          points_required,
+          zoom_account
         )
       `)
       .eq("id", bookingId)
@@ -166,8 +168,9 @@ export async function cancelBooking(
     // 6. Zoom会議削除（非ブロッキング - 失敗してもキャンセルは続行）
     if (booking.zoom_meeting_id) {
       try {
+        const zoomAccountType = (booking.meeting_menus?.zoom_account as "A" | "B") || "A"
         await retryWithExponentialBackoff(
-          () => deleteZoomMeetingApi(booking.zoom_meeting_id!),
+          () => deleteZoomMeetingApi(booking.zoom_meeting_id!, zoomAccountType),
           { maxRetries: 2 }
         )
         console.log(`[cancelBooking] Zoom meeting deleted: ${booking.zoom_meeting_id}`)

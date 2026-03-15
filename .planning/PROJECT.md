@@ -8,6 +8,17 @@
 
 **気軽にかずみんに会いに行ける予約体験** — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる？」と友だちに声をかける感覚でセッションを予約できること。
 
+## Current Milestone: v1.2 安定化
+
+**Goal:** バグ修正とE2Eテスト導入で本番品質を安定させる
+
+**Target features:**
+- Zoom削除バグ修正（#1）
+- 時刻UTC表示バグ修正（#2）
+- 招待メール未送信バグ修正（#3）
+- カレンダーブロック漏れバグ修正（#4）
+- E2Eテスト環境導入（#5）
+
 ## Current State
 
 **v1.1 営業時間拡張 — SHIPPED** (2026-03-03)
@@ -80,7 +91,14 @@
 
 ### Active
 
-(None — planning next milestone)
+**バグ修正** (4 requirements)
+- [ ] Zoom削除バグ修正 — キャンセル時にZoom側の会議が確実に削除される
+- [ ] 時刻UTC表示バグ修正 — 全画面でJST表示を徹底
+- [ ] 招待メール送信 — 会員招待時にウェルカムメールが送られる
+- [ ] カレンダーブロック漏れ修正 — 管理者カレンダーの予定がスロットに正確に反映される
+
+**E2Eテスト** (1 requirement)
+- [ ] Playwright E2Eテスト環境構築 — developブランチ対応のE2Eテスト導入
 
 ### Out of Scope
 
@@ -130,4 +148,4 @@
 | 祝日パターン全曜日共通化 | 曜日別7パターンは複雑すぎる、1パターンで十分 | ✓ Validated (v1.1) |
 
 ---
-*Last updated: 2026-03-03 after v1.1 milestone shipped*
+*Last updated: 2026-03-15 after v1.2 milestone started*

@@ -1,8 +1,9 @@
 ---
-status: awaiting_human_verify
+status: resolved
 trigger: "キャンセル時のadminメール送信でTypeError発生"
 created: 2026-03-05T10:00:00+09:00
-updated: 2026-03-05T10:25:00+09:00
+updated: 2026-03-05T10:35:00+09:00
+resolved: 2026-03-05T10:35:00+09:00
 ---
 
 ## Current Focus
@@ -84,7 +85,7 @@ verification: |
   - 既存テスト: 5/5 PASS
   - ビルド: PASS
   - lint: PASS
-  - 本番環境での動作確認: 待ち
+  - 本番環境での動作確認: PASS (ユーザー確認済み)
 
 files_changed:
   - src/lib/integrations/email.ts

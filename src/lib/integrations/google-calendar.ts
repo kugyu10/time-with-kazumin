@@ -74,8 +74,16 @@ export async function getAdminBusyTimes(
       })
     })
 
+    // カレンダーIDキーの不一致を検出するためのログ
+    const calendarKeys = Object.keys(response.data.calendars || {})
+    console.log("[GoogleCalendar] Calendar keys in response:", calendarKeys)
+    console.log("[GoogleCalendar] Looking for key:", GOOGLE_CALENDAR_ID)
+
     const busySlots =
       response.data.calendars?.[GOOGLE_CALENDAR_ID]?.busy || []
+
+    // busySlotsの内容を出力（デバッグ用）
+    console.log("[GoogleCalendar] Busy slots raw data:", JSON.stringify(busySlots.slice(0, 3)))
 
     console.log(
       `[GoogleCalendar] Retrieved ${busySlots.length} busy slots for ${startDate} to ${endDate}`
@@ -100,6 +108,9 @@ export async function getCachedBusyTimes(
   startDate: string,
   endDate: string
 ): Promise<BusyTime[]> {
+  // 環境変数をログ出力（診断用）
+  console.log("[GoogleCalendar] GOOGLE_CALENDAR_ID:", process.env.GOOGLE_CALENDAR_ID || "(not set, using primary)")
+
   // OAuthトークンが設定されていない場合はスキップ
   const isAuth = await isAuthenticated()
   if (!isAuth) {
