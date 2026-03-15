@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: Completed 08-bug-fixes-01-PLAN.md
-last_updated: "2026-03-15T06:27:56.461Z"
+stopped_at: Completed 08-bug-fixes-02-PLAN.md
+last_updated: "2026-03-15T06:44:43.852Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 18
-  completed_plans: 17
+  completed_plans: 18
   percent: 0
 ---
 
@@ -62,6 +62,7 @@ Progress: [          ] 0%
 
 *Updated after each plan completion*
 | Phase 08-bug-fixes P01 | 3 | 3 tasks | 3 files |
+| Phase 08-bug-fixes P02 | 40 | 4 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 07]: 祝日パターンは day_of_week=0 の1行で管理（曜日無視）
 - [Phase 08-bug-fixes]: Zoom削除のaccountTypeはmeeting_menus.zoom_accountから取得（DBクエリ失敗時はデフォルト'A'）
 - [Phase 08-bug-fixes]: BUG-05はコードロジック正常のため診断ログ強化のみ実施（OAuth設定・GOOGLE_CALENDAR_ID確認用）
+- [Phase 08-bug-fixes]: sendWelcomeEmailは非ブロッキング: 失敗しても会員作成は成功扱い（Resendメール送信ポリシーを踏襲）
+- [Phase 08-bug-fixes]: date-fnsのformat()はtimeZone非対応のため日時フォーマットでは使用禁止（YAGNI: date-fns-tz追加せず）
+- [Phase 08-bug-fixes]: 全日時表示でtimeZone: 'Asia/Tokyo'を必須指定（Vercel環境はUTCで動作するため）
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -141,7 +145,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T06:27:56.459Z
-Stopped at: Completed 08-bug-fixes-01-PLAN.md
+Last session: 2026-03-15T06:44:43.849Z
+Stopped at: Completed 08-bug-fixes-02-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`

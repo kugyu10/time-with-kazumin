@@ -8,9 +8,9 @@
 ### バグ修正
 
 - [x] **BUG-01**: キャンセル時にZoom側の会議が確実に削除される（GitHub #1）
-- [ ] **BUG-02**: `/booking/[id]` の予約詳細画面の時刻がJSTで表示される（GitHub #2）
-- [ ] **BUG-03**: 全画面でJST表示を統一し、UTC/JST変換コード規約を `docs/rules.md` に明文化する（GitHub #2 横展開）
-- [ ] **BUG-04**: 会員招待完了後にウェルカムメールが送信される（GitHub #3）
+- [x] **BUG-02**: `/booking/[id]` の予約詳細画面の時刻がJSTで表示される（GitHub #2）
+- [x] **BUG-03**: 全画面でJST表示を統一し、UTC/JST変換コード規約を `docs/rules.md` に明文化する（GitHub #2 横展開）
+- [x] **BUG-04**: 会員招待完了後にウェルカムメールが送信される（GitHub #3）
 - [x] **BUG-05**: 管理者Googleカレンダーの予定がスロットに正確にブロックされる（GitHub #4）
 
 ### E2Eテスト
@@ -42,9 +42,9 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BUG-01 | Phase 8 | Complete |
-| BUG-02 | Phase 8 | Pending |
-| BUG-03 | Phase 8 | Pending |
-| BUG-04 | Phase 8 | Pending |
+| BUG-02 | Phase 8 | Complete |
+| BUG-03 | Phase 8 | Complete |
+| BUG-04 | Phase 8 | Complete |
 | BUG-05 | Phase 8 | Complete |
 | E2E-01 | Phase 9 | Pending |
 | E2E-02 | Phase 10 | Pending |

@@ -137,7 +137,7 @@ Plans:
 
 **Milestone Goal:** バグ修正とE2Eテスト導入で本番品質を安定させる
 
-- [ ] **Phase 8: バグ修正** - Zoom・タイムゾーン・メール・カレンダーの本番バグを一括解消
+- [x] **Phase 8: バグ修正** - Zoom・タイムゾーン・メール・カレンダーの本番バグを一括解消 (completed 2026-03-15)
 - [ ] **Phase 9: Playwright基盤** - E2Eテスト環境構築（Vercel preview + Supabase dev統合）
 - [ ] **Phase 10: テストシナリオ** - ゲスト・会員予約フローのE2Eテスト実装
 - [ ] **Phase 11: CI統合** - GitHub ActionsによるE2E自動実行パイプライン
@@ -220,7 +220,7 @@ Phases execute in numeric order: 8 → 9 → 10 → 11
 | 5. 管理機能 | v1.0 | 3/3 | Complete | 2026-02-22 |
 | 6. 自動化タスク | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 7. 営業時間拡張 | v1.1 | 1/1 | Complete | 2026-03-03 |
-| 8. バグ修正 | 1/2 | In Progress|  | - |
+| 8. バグ修正 | 2/2 | Complete   | 2026-03-15 | - |
 | 9. Playwright基盤 | v1.2 | 0/2 | Not started | - |
 | 10. テストシナリオ | v1.2 | 0/2 | Not started | - |
 | 11. CI統合 | v1.2 | 0/1 | Not started | - |
