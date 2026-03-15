@@ -1,31 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: 営業時間拡張
-status: shipped
-last_updated: "2026-03-03T12:45:00.000Z"
+milestone: v1.2
+milestone_name: 安定化
+status: planning
+last_updated: "2026-03-15T00:00:00.000Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-03)
+See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** Planning next milestone
+**Current focus:** Defining requirements for v1.2
 
 ## Current Position
 
-Milestone: v1.1 営業時間拡張 — SHIPPED
-Phase: All complete (7 phases)
-Status: Shipped
-Last activity: 2026-03-04 — Completed quick task 3: メールを有効化
+Milestone: v1.2 安定化
+Phase: Not started (defining requirements)
+Status: Defining requirements
+Last activity: 2026-03-15 — Milestone v1.2 started
 
 Progress: [██████████] 100%
 
