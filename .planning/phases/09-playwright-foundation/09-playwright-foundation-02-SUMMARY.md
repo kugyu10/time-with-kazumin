@@ -128,3 +128,14 @@ CI環境での実行前に、Vercel dashboardでdevelopブランチのDeployment
 ---
 *Phase: 09-playwright-foundation*
 *Completed: 2026-03-15*
+
+## Self-Check: PASSED
+
+- FOUND: .planning/phases/09-playwright-foundation/09-playwright-foundation-02-SUMMARY.md
+- FOUND: e2e/global-setup.ts
+- FOUND: e2e/global-teardown.ts
+- FOUND: e2e/auth.setup.ts
+- FOUND: e2e/fixtures.ts
+- FOUND: commit 2fe6265 (Task 1)
+- FOUND: commit 5523860 (Task 2)
+- FOUND: commit a4521aa (Plan metadata)
