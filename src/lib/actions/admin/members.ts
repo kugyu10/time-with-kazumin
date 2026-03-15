@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
+import { sendWelcomeEmail } from "@/lib/integrations/email"
 
 // Validation schema for member creation
 const CreateMemberSchema = z.object({
@@ -235,10 +236,23 @@ export async function createMember(data: CreateMemberInput) {
   }
 
   // Send password reset email so user can set their own password
-  await supabase.auth.admin.generateLink({
+  const { data: linkData } = await supabase.auth.admin.generateLink({
     type: "recovery",
     email: validated.email,
   })
+
+  const resetUrl = linkData?.properties?.action_link ?? null
+
+  // 非ブロッキング: 失敗しても会員作成は成功扱い
+  try {
+    await sendWelcomeEmail({
+      userEmail: validated.email,
+      userName: validated.full_name,
+      passwordResetUrl: resetUrl,
+    })
+  } catch (error) {
+    console.warn("[createMember] Welcome email failed (non-blocking):", error)
+  }
 
   revalidatePath("/admin/members")
   return { success: true, userId }
