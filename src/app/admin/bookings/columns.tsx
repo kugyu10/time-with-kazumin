@@ -12,8 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { format } from "date-fns"
-import { ja } from "date-fns/locale"
 import type { AdminBooking, BookingStatus } from "@/lib/actions/admin/bookings"
 
 type ColumnsProps = {
@@ -52,13 +50,30 @@ export function getColumns({ onStatusChange, onCancel }: ColumnsProps): ColumnDe
       },
       cell: ({ row }) => {
         const startTime = new Date(row.getValue("start_time"))
+        const endTime = new Date(row.original.end_time)
         return (
           <div className="space-y-1">
             <div className="font-medium">
-              {format(startTime, "yyyy/MM/dd (E)", { locale: ja })}
+              {startTime.toLocaleDateString("ja-JP", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                weekday: "short",
+                timeZone: "Asia/Tokyo",
+              })}
             </div>
             <div className="text-sm text-muted-foreground">
-              {format(startTime, "HH:mm")} - {format(new Date(row.original.end_time), "HH:mm")}
+              {startTime.toLocaleTimeString("ja-JP", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+                timeZone: "Asia/Tokyo",
+              })} - {endTime.toLocaleTimeString("ja-JP", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+                timeZone: "Asia/Tokyo",
+              })}
             </div>
           </div>
         )

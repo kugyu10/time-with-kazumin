@@ -174,13 +174,16 @@ export default async function GuestCancelPage({ params }: PageProps) {
     month: "long",
     day: "numeric",
     weekday: "long",
+    timeZone: "Asia/Tokyo",
   })
   const formattedTime = `${startTime.toLocaleTimeString("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Tokyo",
   })} - ${endTime.toLocaleTimeString("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Tokyo",
   })}`
 
   // 6. キャンセル可能 - クライアントコンポーネントへ渡す
