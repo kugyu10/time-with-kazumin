@@ -155,10 +155,10 @@ Plans:
   4. `docs/rules.md` にUTC/JST変換のコーディング規約が記載されており、将来の開発者が参照できる
   5. 会員を招待して承認すると、その会員にウェルカムメールが届く
   6. 管理者Googleカレンダーに登録した予定がスロット一覧に反映されて予約不可になる
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Zoom削除バグ修正（BUG-01）、カレンダーブロック漏れ修正（BUG-05）
+- [ ] 08-01-PLAN.md — Zoom削除バグ修正（BUG-01）、カレンダーブロック漏れ診断ログ追加（BUG-05）
 - [ ] 08-02-PLAN.md — JST時刻表示修正（BUG-02、BUG-03）、docs/rules.md作成、招待メール送信（BUG-04）
 
 ### Phase 9: Playwright基盤
