@@ -170,7 +170,7 @@ Plans:
   2. `npm run test:e2e:ui` でPlaywright UIモードが起動し、ブラウザでテストをデバッグできる
   3. テストユーザー（会員・管理者）がglobal-setupで自動作成され、global-teardownで削除される
   4. `e2e/.auth/` のセッションファイルが `.gitignore` に追加されており、誤コミットしない
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 09-01-PLAN.md — Playwright 1.58.2インストール、playwright.config.ts（デュアルモード設定）、package.jsonスクリプト追加
