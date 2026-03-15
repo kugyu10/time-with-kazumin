@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: Completed 09-playwright-foundation-02-PLAN.md
-last_updated: "2026-03-15T12:46:57.865Z"
+stopped_at: Completed 10-test-scenarios-01-PLAN.md
+last_updated: "2026-03-15T14:20:04.377Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
   completed_phases: 9
-  total_plans: 20
-  completed_plans: 20
+  total_plans: 22
+  completed_plans: 21
   percent: 0
 ---
 
@@ -65,6 +65,7 @@ Progress: [          ] 0%
 | Phase 08-bug-fixes P02 | 40 | 4 tasks | 9 files |
 | Phase 09-playwright-foundation P01 | 4 | 2 tasks | 7 files |
 | Phase 09-playwright-foundation P02 | checkpoint | 3 tasks | 4 files |
+| Phase 10-test-scenarios P01 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Recent decisions affecting current work:
 - [Phase 09-playwright-foundation]: .env.test.example を .gitignore の !除外対象に追加: .env.* パターンとの衝突を解消
 - [Phase 09-playwright-foundation]: requireAdmin()はprofilesテーブルのroleカラムで判定するため、global-setupではauth.admin.createUser()後にprofilesテーブルへupsertが必要
 - [Phase 09-playwright-foundation]: 管理者ユーザーもログイン後は/bookings/newにリダイレクト（LoginForm実装の動作）
+- [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: Server Component E2E検証はglobal-setupでDB実データ挿入後に直接URLアクセスするパターンを採用（page.route()不可のため）
+- [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: cancel_tokenをglobal-setupで生成しe2e-tokens.jsonに書き出す設計（テストファイルにトークン生成ロジック不要）
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -151,7 +154,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T12:43:52.317Z
-Stopped at: Completed 09-playwright-foundation-02-PLAN.md
+Last session: 2026-03-15T14:20:04.373Z
+Stopped at: Completed 10-test-scenarios-01-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`

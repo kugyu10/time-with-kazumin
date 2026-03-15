@@ -222,5 +222,5 @@ Phases execute in numeric order: 8 → 9 → 10 → 11
 | 7. 営業時間拡張 | v1.1 | 1/1 | Complete | 2026-03-03 |
 | 8. バグ修正 | 2/2 | Complete   | 2026-03-15 | - |
 | 9. Playwright基盤 | 2/2 | Complete   | 2026-03-15 | - |
-| 10. テストシナリオ | v1.2 | 0/2 | Not started | - |
+| 10. テストシナリオ | 1/2 | In Progress|  | - |
 | 11. CI統合 | v1.2 | 0/1 | Not started | - |
