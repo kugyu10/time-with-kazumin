@@ -3,12 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-last_updated: "2026-03-15T00:00:00.000Z"
+stopped_at: Completed 08-bug-fixes-01-PLAN.md
+last_updated: "2026-03-15T06:27:56.461Z"
+last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 7
-  completed_plans: 0
+  total_phases: 11
+  completed_phases: 7
+  total_plans: 18
+  completed_plans: 17
+  percent: 0
 ---
 
 # Project State
@@ -58,6 +61,7 @@ Progress: [          ] 0%
 | Phase 11 | 0/1 | - | - |
 
 *Updated after each plan completion*
+| Phase 08-bug-fixes P01 | 3 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -87,6 +91,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Edge FunctionsからResend API直接呼び出し: Next.js経由せずDeno runtimeから直接fetch
 - [Phase 06]: HTMLテンプレート手動生成: React Email renderはサーバーサイド専用のためEdge Function内でHTML文字列を直接生成
 - [Phase 07]: 祝日パターンは day_of_week=0 の1行で管理（曜日無視）
+- [Phase 08-bug-fixes]: Zoom削除のaccountTypeはmeeting_menus.zoom_accountから取得（DBクエリ失敗時はデフォルト'A'）
+- [Phase 08-bug-fixes]: BUG-05はコードロジック正常のため診断ログ強化のみ実施（OAuth設定・GOOGLE_CALENDAR_ID確認用）
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -135,7 +141,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15
-Stopped at: Roadmap created for v1.2 (Phases 8-11 defined)
+Last session: 2026-03-15T06:27:56.459Z
+Stopped at: Completed 08-bug-fixes-01-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`
