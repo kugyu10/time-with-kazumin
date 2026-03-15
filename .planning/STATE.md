@@ -4,7 +4,7 @@ milestone: v1.2
 milestone_name: 安定化
 status: planning
 stopped_at: Completed 09-playwright-foundation-02-PLAN.md
-last_updated: "2026-03-15T12:43:52.320Z"
+last_updated: "2026-03-15T12:46:57.865Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
