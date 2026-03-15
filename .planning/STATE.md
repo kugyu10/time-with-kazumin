@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: Completed 09-playwright-foundation-01-PLAN.md
-last_updated: "2026-03-15T11:35:59.883Z"
+stopped_at: Completed 09-playwright-foundation-02-PLAN.md
+last_updated: "2026-03-15T12:43:52.320Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 20
-  completed_plans: 19
+  completed_plans: 20
   percent: 0
 ---
 
@@ -64,6 +64,7 @@ Progress: [          ] 0%
 | Phase 08-bug-fixes P01 | 3 | 3 tasks | 3 files |
 | Phase 08-bug-fixes P02 | 40 | 4 tasks | 9 files |
 | Phase 09-playwright-foundation P01 | 4 | 2 tasks | 7 files |
+| Phase 09-playwright-foundation P02 | checkpoint | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,8 @@ Recent decisions affecting current work:
 - [Phase 08-bug-fixes]: 全日時表示でtimeZone: 'Asia/Tokyo'を必須指定（Vercel環境はUTCで動作するため）
 - [Phase 09-playwright-foundation]: global-setup.ts/global-teardown.ts スタブ作成: npx playwright test --list が通るようにするためのRule 3自動修正（09-02で実装）
 - [Phase 09-playwright-foundation]: .env.test.example を .gitignore の !除外対象に追加: .env.* パターンとの衝突を解消
+- [Phase 09-playwright-foundation]: requireAdmin()はprofilesテーブルのroleカラムで判定するため、global-setupではauth.admin.createUser()後にprofilesテーブルへupsertが必要
+- [Phase 09-playwright-foundation]: 管理者ユーザーもログイン後は/bookings/newにリダイレクト（LoginForm実装の動作）
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -148,7 +151,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T11:35:59.880Z
-Stopped at: Completed 09-playwright-foundation-01-PLAN.md
+Last session: 2026-03-15T12:43:52.317Z
+Stopped at: Completed 09-playwright-foundation-02-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`
