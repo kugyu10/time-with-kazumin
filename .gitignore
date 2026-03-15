@@ -36,3 +36,9 @@ supabase/.branches
 supabase/.temp
 .env.local
 .env.prod
+
+# Playwright
+e2e/.auth/
+!e2e/.auth/.gitkeep
+playwright-report/
+test-results/
