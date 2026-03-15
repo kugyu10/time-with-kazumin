@@ -47,10 +47,10 @@
 | BUG-04 | Phase 8 | Pending |
 | BUG-05 | Phase 8 | Pending |
 | E2E-01 | Phase 9 | Pending |
-| E2E-02 | Phase 9 | Pending |
-| E2E-03 | Phase 9 | Pending |
-| E2E-04 | Phase 9 | Pending |
-| E2E-05 | Phase 9 | Pending |
+| E2E-02 | Phase 10 | Pending |
+| E2E-03 | Phase 10 | Pending |
+| E2E-04 | Phase 10 | Pending |
+| E2E-05 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 10 total
@@ -59,4 +59,4 @@
 
 ---
 *Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 after initial definition*
+*Last updated: 2026-03-15 — Roadmap created, traceability updated (Phase 8-11)*
