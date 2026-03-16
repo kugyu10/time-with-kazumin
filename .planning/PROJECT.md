@@ -8,27 +8,24 @@
 
 **気軽にかずみんに会いに行ける予約体験** — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる？」と友だちに声をかける感覚でセッションを予約できること。
 
-## Current Milestone: v1.2 安定化
-
-**Goal:** バグ修正とE2Eテスト導入で本番品質を安定させる
-
-**Target features:**
-- Zoom削除バグ修正（#1）
-- 時刻UTC表示バグ修正（#2）
-- 招待メール未送信バグ修正（#3）
-- カレンダーブロック漏れバグ修正（#4）
-- E2Eテスト環境導入（#5）
-
 ## Current State
 
-**v1.1 営業時間拡張 — SHIPPED** (2026-03-03)
+**v1.2 安定化 — SHIPPED** (2026-03-16)
 
-祝日・休憩時間・予約自動完了で営業時間管理を強化。
-- 祝日対応（全曜日共通の営業時間パターン、holidays-jp API自動判定）
-- 休憩時間設定（曜日ごとに設定可能、スロット自動除外）
-- 予約自動完了（終了30分後に自動でcompleted、サンキューメール連携）
+バグ修正とE2Eテスト導入で本番品質を安定化。
+- Zoom削除・JST時刻表示・ウェルカムメール・カレンダーブロックのバグ修正（5件）
+- Playwright E2E基盤構築 + ゲスト予約・会員ログイン・会員予約の3フローE2Eテスト
+- GitHub Actions CI統合（develop→main PR時にVercel preview URLでE2E自動実行）
+
+**Tech stack:** Next.js App Router + Supabase + Vercel + shadcn/ui
+**Codebase:** ~19,000 LOC TypeScript/TSX
+**E2E:** Playwright 1.58.2 + GitHub Actions CI
 
 ## Shipped Milestones
+
+**v1.2 安定化 — SHIPPED** (2026-03-16)
+- 4 phases (8-11), 7 plans, 10 requirements
+- See `.planning/milestones/v1.2-REQUIREMENTS.md`
 
 **v1.1 営業時間拡張 — SHIPPED** (2026-03-03)
 - 1 phase, 1 plan, 7 requirements
@@ -89,16 +86,25 @@
 - ✓ キャンセル時にキャンセルメールを送信する — v1.0
 - ✓ 予約時に管理者カレンダーにイベント追加、キャンセル時に削除する — v1.0
 
+### Validated (v1.2)
+
+**バグ修正** (5 requirements)
+- ✓ キャンセル時にZoom側の会議が確実に削除される — v1.2
+- ✓ 全画面でJST表示を統一、UTC/JST変換規約を明文化 — v1.2
+- ✓ 会員招待時にウェルカムメールが送られる — v1.2
+- ✓ 管理者カレンダーの予定がスロットに正確に反映される — v1.2
+- ✓ 予約詳細画面の時刻がJSTで表示される — v1.2
+
+**E2Eテスト** (5 requirements)
+- ✓ Playwright E2E環境構築（Vercel preview + Supabase dev） — v1.2
+- ✓ ゲスト予約フローE2Eテスト — v1.2
+- ✓ 会員ログインフローE2Eテスト — v1.2
+- ✓ 会員予約フローE2Eテスト — v1.2
+- ✓ GitHub ActionsでE2E自動実行 — v1.2
+
 ### Active
 
-**バグ修正** (4 requirements)
-- [ ] Zoom削除バグ修正 — キャンセル時にZoom側の会議が確実に削除される
-- [ ] 時刻UTC表示バグ修正 — 全画面でJST表示を徹底
-- [ ] 招待メール送信 — 会員招待時にウェルカムメールが送られる
-- [ ] カレンダーブロック漏れ修正 — 管理者カレンダーの予定がスロットに正確に反映される
-
-**E2Eテスト** (1 requirement)
-- [ ] Playwright E2Eテスト環境構築 — developブランチ対応のE2Eテスト導入
+（次のマイルストーンで定義）
 
 ### Out of Scope
 
@@ -146,6 +152,9 @@
 | Sagaパターン予約フロー | 8ステップの補償トランザクション実装 | ✓ Validated |
 | Edge Functions + pg_cron | 定期タスク自動化（月次ポイント、リマインダー、サンキューメール） | ✓ Validated |
 | 祝日パターン全曜日共通化 | 曜日別7パターンは複雑すぎる、1パターンで十分 | ✓ Validated (v1.1) |
+| Playwright E2E + Vercel preview | 本番環境差分を排除、ローカル品質はUTで担保 | ✓ Validated (v1.2) |
+| page.route()モック方式 | 外部API（Zoom/Calendar/Resend）に依存しないE2E設計 | ✓ Validated (v1.2) |
+| GitHub Actions 2-job構成 | wait-for-preview→e2eの分離で障害切り分け容易 | ✓ Validated (v1.2) |
 
 ---
-*Last updated: 2026-03-15 after v1.2 milestone started*
+*Last updated: 2026-03-16 after v1.2 安定化 milestone*
