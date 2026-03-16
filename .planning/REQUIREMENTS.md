@@ -19,7 +19,7 @@
 - [x] **E2E-02**: ゲスト予約フロー（閲覧→予約→キャンセル）のE2Eテストが通る
 - [x] **E2E-03**: 会員ログインフロー（メール/パスワード）のE2Eテストが通る
 - [x] **E2E-04**: 会員予約フロー（メニュー選択→ポイント消費→予約）のE2Eテストが通る
-- [ ] **E2E-05**: GitHub ActionsでE2EテストがVercel preview URL向けに自動実行される
+- [x] **E2E-05**: GitHub ActionsでE2EテストがVercel preview URL向けに自動実行される
 
 ## Future Requirements
 
@@ -50,7 +50,7 @@
 | E2E-02 | Phase 10 | Complete |
 | E2E-03 | Phase 10 | Complete |
 | E2E-04 | Phase 10 | Complete |
-| E2E-05 | Phase 11 | Pending |
+| E2E-05 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 10 total
