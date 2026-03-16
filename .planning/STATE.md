@@ -4,7 +4,7 @@ milestone: v1.2
 milestone_name: 安定化
 status: planning
 stopped_at: Completed 11-ci-integration-01-PLAN.md
-last_updated: "2026-03-16T08:00:10.574Z"
+last_updated: "2026-03-16T08:03:07.692Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
