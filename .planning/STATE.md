@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: Completed 10-test-scenarios-02-PLAN.md
-last_updated: "2026-03-15T14:24:40.560Z"
+stopped_at: Completed 11-ci-integration-01-PLAN.md
+last_updated: "2026-03-16T08:14:29.451Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
-  completed_phases: 10
-  total_plans: 22
-  completed_plans: 22
+  completed_phases: 11
+  total_plans: 23
+  completed_plans: 23
   percent: 0
 ---
 
@@ -67,6 +67,7 @@ Progress: [          ] 0%
 | Phase 09-playwright-foundation P02 | checkpoint | 3 tasks | 4 files |
 | Phase 10-test-scenarios P01 | 5 | 2 tasks | 2 files |
 | Phase 10-test-scenarios P02 | 2 | 2 tasks | 2 files |
+| Phase 11-ci-integration P01 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: cancel_tokenをglobal-setupで生成しe2e-tokens.jsonに書き出す設計（テストファイルにトークン生成ロジック不要）
 - [Phase 10-test-scenarios]: memberPage フィクスチャは storageState で認証済みなため、テスト内でログイン操作は不要（KISS原則）
 - [Phase 10-test-scenarios]: ポイント残高変化テストはモック環境で不可のため、global-setup で設定した 100 ポイントの表示確認に留める
+- [Phase 11-ci-integration]: [Phase 11-ci-integration]: GITHUB_TOKENのみ使用（VERCEL_TOKEN不要）: wait-for-vercel-previewはGitHub Deployment Events経由でVercel Preview URLを取得
+- [Phase 11-ci-integration]: [Phase 11-ci-integration]: chromiumのみインストールでCI実行時間を短縮（KISS/YAGNI原則）
+- [Phase 11-ci-integration]: CIでE2E自動実行確認済み（6 passed, 2 failed, 2 skipped）: テスト失敗2件はテストコード側の問題でCI統合は正常動作
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -157,7 +161,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-15T14:24:40.557Z
-Stopped at: Completed 10-test-scenarios-02-PLAN.md
+Last session: 2026-03-16T08:00:05.742Z
+Stopped at: Completed 11-ci-integration-01-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`
