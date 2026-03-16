@@ -193,18 +193,18 @@ Plans:
 - [ ] 10-02-PLAN.md — 会員ログインフローE2Eテスト（auth.spec.ts）、会員予約フローE2Eテスト（member-booking.spec.ts）
 
 ### Phase 11: CI統合
-**Goal**: GitHub Actionsでdevelopブランチへのpushまたはmain PRに対してE2EテストがVercel preview URL向けに自動実行される
+**Goal**: develop → main へのPR作成・更新時にGitHub ActionsでE2EテストがVercel preview URL向けに自動実行される
 **Depends on**: Phase 10
 **Requirements**: E2E-05
 **Success Criteria** (what must be TRUE):
-  1. developブランチにpushすると、GitHub ActionsでE2Eテストが自動実行される
+  1. develop → main へのPR作成・更新時に、GitHub ActionsでE2Eテストが自動実行される
   2. Vercel preview URLが自動取得され（patrickedqvist/wait-for-vercel-preview使用）、そのURLに対してテストが実行される
-  3. GitHub Secretsに必要な環境変数（SUPABASE_DEV_URL、SUPABASE_DEV_ANON_KEY、SUPABASE_DEV_SERVICE_ROLE_KEY）が設定されている
+  3. GitHub Secretsに必要な環境変数（SUPABASE_DEV_URL、SUPABASE_DEV_ANON_KEY、SUPABASE_DEV_SERVICE_ROLE_KEY等）が設定されている
   4. E2Eテストが失敗した場合、GitHub Actions上で失敗として記録され、原因を特定できるアーティファクトが残る
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 11-01-PLAN.md — GitHub Actions e2e.ymlワークフロー作成、Vercel preview URL自動取得、Secrets設定ガイド
+- [ ] 11-01-PLAN.md — GitHub Actions e2e.ymlワークフロー作成（2-job構成）、Vercel preview URL自動取得、チェックポイント動作確認
 
 ## Progress
 
