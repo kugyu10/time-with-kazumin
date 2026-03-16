@@ -59,10 +59,12 @@ export default async function BookingCompletePage({
       month: "long",
       day: "numeric",
       weekday: "long",
+      timeZone: "Asia/Tokyo",
     }) + " " + date.toLocaleTimeString("ja-JP", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      timeZone: "Asia/Tokyo",
     })
   }
 
