@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 安定化
 status: planning
-stopped_at: "Checkpoint: 11-ci-integration-01 Task 2 human-verify"
-last_updated: "2026-03-16T05:20:13.627Z"
+stopped_at: Completed 11-ci-integration-01-PLAN.md
+last_updated: "2026-03-16T08:00:10.574Z"
 last_activity: 2026-03-15 — Roadmap created for v1.2
 progress:
   total_phases: 11
@@ -112,6 +112,7 @@ Recent decisions affecting current work:
 - [Phase 10-test-scenarios]: ポイント残高変化テストはモック環境で不可のため、global-setup で設定した 100 ポイントの表示確認に留める
 - [Phase 11-ci-integration]: [Phase 11-ci-integration]: GITHUB_TOKENのみ使用（VERCEL_TOKEN不要）: wait-for-vercel-previewはGitHub Deployment Events経由でVercel Preview URLを取得
 - [Phase 11-ci-integration]: [Phase 11-ci-integration]: chromiumのみインストールでCI実行時間を短縮（KISS/YAGNI原則）
+- [Phase 11-ci-integration]: CIでE2E自動実行確認済み（6 passed, 2 failed, 2 skipped）: テスト失敗2件はテストコード側の問題でCI統合は正常動作
 
 ### v1.2 E2E Decisions (pre-decided from research)
 
@@ -160,7 +161,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T05:20:13.624Z
-Stopped at: Checkpoint: 11-ci-integration-01 Task 2 human-verify
+Last session: 2026-03-16T08:00:05.742Z
+Stopped at: Completed 11-ci-integration-01-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 8`

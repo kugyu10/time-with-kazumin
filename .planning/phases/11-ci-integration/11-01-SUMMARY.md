@@ -43,20 +43,20 @@ requirements-completed:
   - E2E-05
 
 # Metrics
-duration: 1min
+duration: ~30min（人間によるCI動作確認を含む）
 completed: 2026-03-16
 ---
 
 # Phase 11 Plan 01: CI Integration Summary
 
-**develop → main PR作成時にVercel Preview URLへPlaywright E2Eテストを自動実行するGitHub Actions 2-jobワークフロー**
+**develop → main PR作成時にVercel Preview URLへPlaywright E2Eテストを自動実行するGitHub Actions 2-jobワークフロー（CI実環境で6/10 passed、playwright-reportアーティファクト保存確認済み）**
 
 ## Performance
 
-- **Duration:** 1 min
+- **Duration:** ~30min（人間によるCI動作確認含む）
 - **Started:** 2026-03-16T05:18:40Z
-- **Completed:** 2026-03-16T05:19:16Z
-- **Tasks:** 1/2（Task 2はcheckpoint:human-verifyで停止）
+- **Completed:** 2026-03-16T07:58:13Z
+- **Tasks:** 2/2（全タスク完了）
 - **Files modified:** 1
 
 ## Accomplishments
@@ -64,14 +64,16 @@ completed: 2026-03-16
 - Job 1（wait-for-preview）: `patrickedqvist/wait-for-vercel-preview@v1.3.3` でVercel Preview URLを自動取得
 - Job 2（e2e）: chromiumのみインストールし、8つのGitHub Secretsを参照してPlaywrightテストを実行
 - `!cancelled()` 条件でHTMLレポートをアーティファクトとして30日間保存
+- CI実環境での動作確認完了: E2E Testsワークフロー発火、Vercel preview URL取得、Playwright実行（6 passed, 2 failed, 2 skipped）、アーティファクト保存を確認
 
 ## Task Commits
 
 各タスクは個別にコミットされました:
 
 1. **Task 1: GitHub Actions E2Eワークフロー作成** - `6973826` (feat)
+2. **Task 2: PR作成によるCI動作確認** - checkpoint:human-verify（コミット不要・人間確認タスク）
 
-**Plan metadata:** TBD（最終コミット後に更新）
+**Plan metadata:** （本SUMMARYコミット）
 
 ## Files Created/Modified
 - `.github/workflows/e2e.yml` - develop → main PR時にE2Eテストを自動実行するGitHub Actionsワークフロー
@@ -87,11 +89,14 @@ None - plan executed exactly as written.
 
 ## Issues Encountered
 
-None
+- CI実行結果: 6 passed, 2 failed, 2 skipped
+  - 2件の失敗はテストコード側の問題（CI統合の問題ではない）
+  - CI統合自体は正常に動作することを確認済み
+  - テスト修正は別途対応事項（Phase 11スコープ外）
 
 ## User Setup Required
 
-**外部サービスの手動設定が必要です。** GitHub Secretsに以下の8変数を設定してください:
+**外部サービスの手動設定が必要でした（実施済み）。** GitHub Secretsに以下の8変数を設定:
 
 設定場所: GitHub → リポジトリ → Settings → Secrets and variables → Actions → New repository secret
 
@@ -107,8 +112,9 @@ None
 | `E2E_ADMIN_PASSWORD` | `.env.test` の `E2E_ADMIN_PASSWORD` の値 |
 
 ## Next Phase Readiness
-- `.github/workflows/e2e.yml` 配置完了。GitHub SecretsをDashboardで設定後、develop → main PRを作成することでCI検証が可能
-- Task 2（checkpoint:human-verify）: PR作成による実際のCI動作確認が必要
+- Phase 11 完了。v1.2 安定化マイルストーンの全フェーズ（Phase 8〜11）が完了
+- CI統合パイプライン稼働中。develop → main PRでE2Eテストが自動実行される状態
+- 2件のテスト失敗が残存しており、別途テストコード修正が必要（CI統合とは無関係）
 
 ---
 *Phase: 11-ci-integration*
@@ -118,4 +124,5 @@ None
 
 - FOUND: `.github/workflows/e2e.yml`
 - FOUND: `.planning/phases/11-ci-integration/11-01-SUMMARY.md`
-- FOUND commit: `6973826`
+- FOUND commit: `6973826` (Task 1: GitHub Actions E2Eワークフロー作成)
+- CI動作確認: 承認済み（6 passed, 2 failed, 2 skipped — CI統合ゴール達成）
