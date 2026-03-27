@@ -8,14 +8,21 @@
 
 **気軽にかずみんに会いに行ける予約体験** — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる？」と友だちに声をかける感覚でセッションを予約できること。
 
+## Current Milestone: v1.3 運用改善
+
+**Goal:** プランタイプ別メニュー制御、Zoomカレンダーブロック、ポイント溢れ通知、会員アクティビティ可視化で運用品質を向上
+
+**Target features:**
+- Zoomカレンダー参照 (#12) — ZOOM_A/ZOOM_Bスケジュールも空き時間判定に含める（暫定対応）
+- プランタイプ別メニュー表示 (#10) — メニュー可視性をプランタイプに依存させる
+- ポイント溢れ通知メール (#9) — 毎月20日バッチでmax_points超過予定の会員にリマインダー
+- 会員アクティビティ表示 (#8) — 会員一覧で30日/60日未訪問を色分け＋ダッシュボードにリスト表示
+
 ## Current State
 
 **v1.2 安定化 — SHIPPED** (2026-03-16)
 
 バグ修正とE2Eテスト導入で本番品質を安定化。
-- Zoom削除・JST時刻表示・ウェルカムメール・カレンダーブロックのバグ修正（5件）
-- Playwright E2E基盤構築 + ゲスト予約・会員ログイン・会員予約の3フローE2Eテスト
-- GitHub Actions CI統合（develop→main PR時にVercel preview URLでE2E自動実行）
 
 **Tech stack:** Next.js App Router + Supabase + Vercel + shadcn/ui
 **Codebase:** ~19,000 LOC TypeScript/TSX
@@ -104,7 +111,7 @@
 
 ### Active
 
-（次のマイルストーンで定義）
+（v1.3 REQUIREMENTS.md で定義）
 
 ### Out of Scope
 
@@ -157,4 +164,4 @@
 | GitHub Actions 2-job構成 | wait-for-preview→e2eの分離で障害切り分け容易 | ✓ Validated (v1.2) |
 
 ---
-*Last updated: 2026-03-16 after v1.2 安定化 milestone*
+*Last updated: 2026-03-27 after v1.3 運用改善 milestone started*

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: 安定化
+milestone: v1.3
+milestone_name: 運用改善
 status: planning
-stopped_at: Completed 11-ci-integration-01-PLAN.md
-last_updated: "2026-03-16T08:14:29.451Z"
-last_activity: 2026-03-15 — Roadmap created for v1.2
+stopped_at: null
+last_updated: "2026-03-27"
+last_activity: 2026-03-27 — Milestone v1.3 started
 progress:
-  total_phases: 11
-  completed_phases: 11
-  total_plans: 23
-  completed_plans: 23
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** v1.2 安定化 — バグ修正とE2Eテスト導入
+**Current focus:** v1.3 運用改善 — プランタイプ別メニュー・Zoomカレンダー・ポイント溢れ通知・アクティビティ表示
 
 ## Current Position
 
-Milestone: v1.2 安定化
-Phase: Phase 8（バグ修正）— Not started
-Status: Roadmap defined, ready for planning
-Last activity: 2026-03-15 — Roadmap created for v1.2
+Milestone: v1.3 運用改善
+Phase: Not started (defining requirements)
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v1.3 started
 
 Progress: [          ] 0%
 
