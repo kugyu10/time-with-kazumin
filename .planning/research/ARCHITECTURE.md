@@ -1,726 +1,386 @@
-# Architecture Patterns
+# Architecture Research
 
-**Domain:** コーチングセッション予約システム（ポイント管理、カレンダー同期、ビデオ会議統合付き）
-**Researched:** 2026-02-22 / Updated: 2026-03-15 (E2Eテスト統合アーキテクチャ追記)
+**Domain:** コーチングセッション予約サービス — v1.3 運用改善機能の既存アーキテクチャへの統合
+**Researched:** 2026-03-27
 **Confidence:** HIGH
 
+## 既存アーキテクチャの概要
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Next.js App Router (Vercel)                 │
+├──────────────────┬──────────────────┬──────────────────────────┤
+│  (public) Guest  │  (member) Auth   │  /admin Auth             │
+│  /guest/booking  │  /dashboard      │  /members /menus         │
+│  /api/public/    │  /bookings       │  /plans /schedules       │
+│  slots           │                  │  /tasks /dashboard       │
+├──────────────────┴──────────────────┴──────────────────────────┤
+│                     Server Actions + API Routes                 │
+│  src/lib/actions/admin/*.ts  |  src/app/api/public/slots/      │
+├─────────────────────────────────────────────────────────────────┤
+│                     External Integrations                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Zoom S2S     │  │ Google       │  │ Resend               │  │
+│  │ Account A/B  │  │ Calendar API │  │ transactional email  │  │
+│  │ LRU token    │  │ FreeBusy API │  │                      │  │
+│  │ cache        │  │ 15min cache  │  │                      │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│                  Supabase (PostgreSQL + Edge Functions)         │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Tables: profiles, plans, member_plans, meeting_menus,  │   │
+│  │          bookings, point_transactions, weekly_schedules, │   │
+│  │          task_execution_logs, idempotency_keys           │   │
+│  │  RLS: 全テーブルにRow Level Security適用                │   │
+│  │  Stored Procedures: consume_points, refund_points,       │   │
+│  │          grant_monthly_points, manual_adjust_points      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Edge Functions (Deno) + pg_cron                        │   │
+│  │  monthly-point-grant  check-reminder-emails             │   │
+│  │  check-thank-you-emails  auto-complete-bookings         │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## v1.3 新機能の統合ポイント
+
+### 機能1: Zoomカレンダーブロック (#12)
+
+**統合対象:** `/api/public/slots/route.ts` および `/api/public/slots/week/route.ts`
+
+**現在のデータフロー:**
+```
+GET /api/public/slots?date=YYYY-MM-DD
+  ↓
+getCachedBusyTimes() [Google Calendar FreeBusy API, 15分LRUキャッシュ]
+  ↓
+isSlotBusy() でスロット重複チェック
+  ↓
+DB bookings テーブルの既存予約チェック
+  ↓
+available: true/false スロット一覧を返す
+```
+
+**変更後のデータフロー:**
+```
+GET /api/public/slots?date=YYYY-MM-DD
+  ↓
+getCachedBusyTimes() [Google Calendar] --- 変更なし
+  ↓
+getZoomScheduledMeetings("A") [新規]  Zoom API: GET /users/me/meetings?type=scheduled
+getZoomScheduledMeetings("B") [新規]  既存 getZoomAccessToken() のtoken cache再利用
+  ↓ BusyTime[]として正規化
+combinedBusyTimes = [...googleBusy, ...zoomBusyA, ...zoomBusyB]
+  ↓
+isSlotBusy() 既存ロジックをそのまま流用
+  ↓
+available: true/false スロット一覧
+```
+
+**新規コンポーネント:**
+- `src/lib/integrations/zoom.ts` に `getZoomScheduledMeetings(accountType)` 関数を追加
+  - 既存の `getZoomAccessToken(accountType)` を内部で呼ぶ（token cache再利用）
+  - 戻り値は既存の `BusyTime[]` 型 (`{ start: string; end: string }[]`) に変換して返す
+  - Zoom API: `GET https://api.zoom.us/v2/users/me/meetings?type=scheduled&page_size=100`
+  - キャッシュ: Google Calendarと同じLRU Cache (15分TTL) を追加
+
+**変更対象ファイル:**
+- `src/lib/integrations/zoom.ts` — `getZoomScheduledMeetings` 関数を追加 (Modified)
+- `src/app/api/public/slots/route.ts` — Zoom busy times マージ処理を追加 (Modified)
+- `src/app/api/public/slots/week/route.ts` — 同上（週間ビュー用）(Modified)
+
 ---
 
-## E2Eテスト統合アーキテクチャ（v1.2 追加セクション）
+### 機能2: プランタイプ別メニュー表示 (#10)
 
-このセクションは v1.2 マイルストーン「Playwright E2Eテスト環境構築」の調査結果。
-既存アーキテクチャ（Next.js 15 App Router + Supabase dev + Vercel）に対して、
-E2Eテストをどう統合するかを答える。
+**統合対象:** `meeting_menus` テーブル + メニュー取得ロジック + 会員向け予約フロー
+
+**現在のスキーマ:**
+```sql
+meeting_menus: id, name, duration_minutes, points_required, zoom_account,
+               description, is_active, send_thank_you_email
+```
+
+**必要なスキーマ変更 (Migration):**
+```sql
+-- meeting_menus に allowed_plan_types カラムを追加
+-- NULLは全プランに表示（既存メニューへの後方互換）
+ALTER TABLE meeting_menus
+  ADD COLUMN allowed_plan_types INTEGER[] DEFAULT NULL;
+
+-- インデックス（フィルタリング高速化）
+CREATE INDEX idx_meeting_menus_allowed_plan_types
+  ON meeting_menus USING GIN (allowed_plan_types)
+  WHERE allowed_plan_types IS NOT NULL;
+```
+
+**データフロー変更:**
+
+会員向け予約 (変更前):
+```
+会員ログイン → 全is_active=trueメニュー取得 → 表示
+```
+
+会員向け予約 (変更後):
+```
+会員ログイン → member_plans.plan_id を取得
+  ↓
+meeting_menus を取得:
+  WHERE is_active = true
+    AND (allowed_plan_types IS NULL           -- 全プラン対象
+         OR plan_id = ANY(allowed_plan_types)) -- 当該プランのみ
+  ↓
+フィルタ済みメニュー表示
+```
+
+ゲスト向け予約は変更なし（allowed_plan_types=NULLのメニューのみ表示）。
+
+**変更対象ファイル:**
+- `supabase/migrations/YYYYMMDD_add_allowed_plan_types.sql` — **New Migration**
+- `src/lib/actions/admin/menus.ts` — `createMenu`/`updateMenu` に `allowed_plan_types` を追加 (Modified)
+- `src/app/(member)/bookings/` — メニュー一覧取得クエリにplan_idフィルタ追加 (Modified)
+- `src/app/admin/menus/` — 管理画面でプランタイプ選択UIを追加 (Modified)
+- `src/types/database.ts` — `meeting_menus` 型に `allowed_plan_types: number[] | null` 追加 (Modified)
 
 ---
 
-### 質問1: Vercel Preview URLかローカルdevサーバーか
+### 機能3: ポイント溢れ通知メール (#9)
 
-**推奨: CIではVercel Preview URL、ローカルではdev serverを自動起動**
+**統合対象:** Edge Functions (Deno) + pg_cron + Resend
 
-理由:
-- Vercel Preview は本番と同じインフラ（Edge Middleware、環境変数、Vercel関数の挙動）を再現する
-- ローカルdev server (`next dev`) はMiddlewareやEdge Runtimeの挙動が微妙に異なる場合がある
-- 既にdevelopブランチへのpushでVercelがPreview Deployを自動作成している
+**既存パターンとの比較:**
+```
+monthly-point-grant (毎月1日 pg_cron)
+  → grant_monthly_points() RPC
+  → task_execution_logs 記録
 
-実装パターン:
+[新規] point-overflow-notify (毎月20日 pg_cron)
+  → 溢れ予定会員クエリ (SELECT)
+  → Resend メール送信
+  → task_execution_logs 記録
+```
 
+**溢れ判定クエリロジック:**
+```sql
+SELECT
+  mp.id,
+  mp.user_id,
+  mp.current_points,
+  mp.monthly_points,
+  p.max_points,
+  pr.email,
+  pr.full_name,
+  (mp.current_points + mp.monthly_points) - p.max_points as overflow_amount
+FROM member_plans mp
+JOIN plans p ON p.id = mp.plan_id
+JOIN profiles pr ON pr.id = mp.user_id
+WHERE mp.status = 'active'
+  AND p.max_points IS NOT NULL
+  AND (mp.current_points + mp.monthly_points) > p.max_points
+```
+
+**新規コンポーネント:**
+- `supabase/functions/point-overflow-notify/index.ts` — **New Edge Function**
+  - 既存 `monthly-point-grant/index.ts` のパターンを踏襲
+  - 冪等性チェック: `task_execution_logs` で今月20日分が処理済みか確認
+  - `task_execution_logs` に記録（既存テーブル流用）
+
+**pg_cron設定 (新規):**
+```sql
+-- 毎月20日 9:00 JST (= UTC 0:00)
+SELECT cron.schedule('point-overflow-notify', '0 0 20 * *', $$...$$);
+```
+
+**変更対象ファイル:**
+- `supabase/functions/point-overflow-notify/index.ts` — **New**
+- `supabase/migrations/YYYYMMDD_pg_cron_overflow_notify.sql` — **New** (pg_cron設定)
+
+---
+
+### 機能4: 会員アクティビティ表示 (#8)
+
+**統合対象:** 管理画面の会員一覧 + ダッシュボード
+
+**必要データ:** 各会員の最終予約日時（`bookings.start_time` の最大値）
+
+スキーマ変更なし。クエリ時に集計（現規模10人では十分）。
+
+**クエリアプローチ:**
+```sql
+SELECT
+  pr.id,
+  pr.email,
+  pr.full_name,
+  mp.current_points,
+  p.name as plan_name,
+  MAX(b.start_time) as last_booking_at
+FROM profiles pr
+LEFT JOIN member_plans mp ON mp.user_id = pr.id AND mp.status = 'active'
+LEFT JOIN plans p ON p.id = mp.plan_id
+LEFT JOIN bookings b ON b.member_plan_id = mp.id AND b.status = 'completed'
+WHERE pr.role = 'member'
+GROUP BY pr.id, pr.email, pr.full_name, mp.current_points, p.name
+ORDER BY pr.created_at DESC
+```
+
+**アクティビティ分類ロジック (TypeScript側):**
 ```typescript
-// playwright.config.ts
-const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3000"
-
-export default defineConfig({
-  use: {
-    baseURL: BASE_URL,
-  },
-  webServer: process.env.CI
-    ? undefined  // CIではVercel PreviewURLを使うため不要
-    : {
-        command: "npm run dev",
-        url: "http://localhost:3000",
-        reuseExistingServer: !process.env.CI,
-      },
-})
-```
-
-GitHub Actionsでは `patrickedqvist/wait-for-vercel-preview` アクション（または Vercel CLI）で
-PreviewのURLを取得し、`PLAYWRIGHT_TEST_BASE_URL` に渡す。
-
-**Vercel Preview URLの取得戦略:**
-
-```yaml
-# .github/workflows/e2e.yml (抜粋)
-- name: Wait for Vercel Preview
-  id: waitForVercel
-  uses: patrickedqvist/wait-for-vercel-preview@v1.3.3
-  with:
-    token: ${{ secrets.GITHUB_TOKEN }}
-    max_timeout: 300
-
-- name: Run Playwright Tests
-  run: npx playwright test
-  env:
-    PLAYWRIGHT_TEST_BASE_URL: ${{ steps.waitForVercel.outputs.url }}
-    # Supabase dev環境の認証情報
-    NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_DEV_URL }}
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_DEV_ANON_KEY }}
-    SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_DEV_SERVICE_ROLE_KEY }}
-```
-
-**注意:** `patrickedqvist/wait-for-vercel-preview` はGitHub DeploymentイベントをポーリングしてVercel PreviewのURLを取得する。Vercel側でGitHub連携が有効になっている必要がある（既に有効のはず）。
-
----
-
-### 質問2: Supabase devのテストデータ管理（seed/teardown）
-
-**推奨: テスト専用ユーザーを事前作成 + テストごとにbooking等の動的データをservice role経由でcleanup**
-
-**前提:** 既存のSupabase devプロジェクト (`rvhivweztxowtjbivzhs.supabase.co`) を使用。
-テスト専用の独立プロジェクトは作成しない（規模的にオーバーエンジニアリング）。
-
-**戦略:**
-
-```
-テスト実行前 (global setup)
-  → service roleでテストユーザーを作成 (会員ユーザー1人、ゲスト用はユーザー不要)
-  → テストユーザーのmember_planを作成 (ポイント残高付き)
-  → 認証セッションをauth.setup.tsで取得・保存
-
-各テスト後 (afterEach / fixture teardown)
-  → service roleでテストが作成したbookingsを削除
-  → idempotency_keysをクリア
-
-global teardown
-  → テストユーザーを削除 (cascade削除でmember_plan, bookingsも消える)
-```
-
-**実装: グローバルセットアップ**
-
-```typescript
-// e2e/global-setup.ts
-import { createClient } from "@supabase/supabase-js"
-
-export default async function globalSetup() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-
-  // テストユーザー作成（会員向けテスト用）
-  const { data: { user } } = await supabase.auth.admin.createUser({
-    email: "e2e-member@test.kazumin.local",
-    password: "e2e-test-password-123",
-    email_confirm: true,
-  })
-
-  if (user) {
-    // member_planを作成（ポイント残高300）
-    await supabase.from("member_plans").insert({
-      user_id: user.id,
-      plan_id: /* ベーシックプランのID */,
-      remaining_points: 300,
-      is_active: true,
-    })
-  }
-
-  // テストユーザーIDを環境変数に保存（teardown用）
-  process.env.E2E_TEST_USER_ID = user?.id
+function getActivityStatus(lastBookingAt: string | null): 'active' | 'warning' | 'danger' {
+  if (!lastBookingAt) return 'danger'
+  const daysSince = differenceInDays(new Date(), new Date(lastBookingAt))
+  if (daysSince <= 30) return 'active'
+  if (daysSince <= 60) return 'warning'
+  return 'danger'
 }
 ```
 
-**実装: テスト用フィクスチャ（booking cleanup付き）**
-
-```typescript
-// e2e/fixtures.ts
-import { test as base } from "@playwright/test"
-import { createClient } from "@supabase/supabase-js"
-
-const test = base.extend({
-  serviceRole: async ({}, use) => {
-    const client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    await use(client)
-    // テスト後にbookingsをクリーンアップ
-    await client
-      .from("bookings")
-      .delete()
-      .eq("member_id", process.env.E2E_TEST_USER_ID!)
-  },
-})
-```
-
-**重要な設計判断:**
-- DBリセット全体（supabase db reset）はしない。既存のマスターデータ（plans, menus, schedules）が消えてしまう
-- bookingsなどのテストデータのみを削除する
-- CIのworkers: 1 にして並列実行による競合を避ける（Supabase devは接続数制限あり）
+**変更対象ファイル:**
+- `src/lib/actions/admin/members.ts` — `getMembers()` に `last_booking_at` JOIN追加 (Modified)
+- `src/app/admin/members/members-client.tsx` — アクティビティバッジ追加 (Modified)
+- `src/app/admin/dashboard/page.tsx` — 未訪問会員リストセクション追加 (Modified)
 
 ---
 
-### 質問3: CIで実行するかローカルのみか
+## コンポーネント責務一覧
 
-**推奨: CIとローカル両方で実行する。ただしCIはPRのdevelopブランチへのpush時のみ**
-
-**理由:**
-- developブランチが実際の開発ブランチ。mainへの直接pushはない
-- mainブランチへのマージ前にE2Eを通過させることで本番品質を担保
-- ローカルでも実行できることで開発中にも使える
-
-**CIワークフロー設計:**
-
-```yaml
-# .github/workflows/e2e.yml
-name: E2E Tests
-
-on:
-  push:
-    branches: [develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Wait for Vercel Preview
-        id: vercel
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 300
-
-      - name: Run E2E tests
-        run: npx playwright test
-        env:
-          PLAYWRIGHT_TEST_BASE_URL: ${{ steps.vercel.outputs.url }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_DEV_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_DEV_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_DEV_SERVICE_ROLE_KEY }}
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-```
-
-**GitHub Secrets に追加が必要なもの:**
-- `SUPABASE_DEV_URL` — `https://rvhivweztxowtjbivzhs.supabase.co`
-- `SUPABASE_DEV_ANON_KEY` — dev環境のanon key
-- `SUPABASE_DEV_SERVICE_ROLE_KEY` — dev環境のservice role key（テストデータ操作用）
+| コンポーネント | 責務 | 通信先 |
+|----------------|------|--------|
+| `zoom.ts` | Zoom S2S OAuth トークン管理、会議CRUD、スケジュール取得 | Zoom API |
+| `google-calendar.ts` | FreeBusy取得、カレンダーイベントCRUD | Google Calendar API |
+| `/api/public/slots/route.ts` | スロット空き判定統合 (DB + Google + Zoom) | Supabase, zoom.ts, google-calendar.ts |
+| Edge Functions | バッチ処理 (ポイント付与, リマインダー, 通知) | Supabase RPC, Resend |
+| Admin Server Actions | 管理者CRUD操作 | Supabase (service_role) |
+| Server Components (admin) | 管理画面データフェッチ | Server Actions |
 
 ---
 
-### 質問4: Supabase認証の扱い（バイパスかシミュレートか）
+## 推奨ビルド順序
 
-**推奨: REST APIでログインしてsession tokenをlocalStorageに注入する（UIログインは避ける）**
+依存関係に基づいた実装順序:
 
-**根拠:** SupabaseはセッションをブラウザのlocalStorageに `sb-{project_ref}-auth-token` というキーで保存する。
-このキーを直接セットすることで、UI上のログインフォームを経由せずに認証済み状態を再現できる。
+```
+Phase 1: DBスキーマ変更 (依存なし、最初に行う)
+  └── meeting_menus に allowed_plan_types カラム追加 (Migration)
 
-**実装: auth.setup.ts（セッションをファイルに保存）**
+Phase 2: Zoomカレンダーブロック (スキーマ変更不要、独立)
+  ├── zoom.ts に getZoomScheduledMeetings() 追加
+  └── /api/public/slots/ にZoom busy times統合
 
-```typescript
-// e2e/auth.setup.ts
-import { test as setup } from "@playwright/test"
-import { createClient } from "@supabase/supabase-js"
-import fs from "fs"
-import path from "path"
+Phase 3: プランタイプ別メニュー表示 (Phase 1のMigration完了後)
+  ├── menus.ts Server Action に allowed_plan_types フィールド追加
+  ├── 管理画面メニューフォームにプランタイプ選択UI
+  └── 会員向け予約フローにフィルタ適用
 
-const AUTH_FILE = path.join(__dirname, ".auth/member.json")
+Phase 4: ポイント溢れ通知 (スキーマ変更不要、独立)
+  ├── point-overflow-notify Edge Function 作成
+  └── pg_cron スケジュール設定
 
-setup("authenticate as member", async ({ page }) => {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  // REST APIでログイン（UIを経由しない）
-  const { data: { session }, error } = await supabase.auth.signInWithPassword({
-    email: "e2e-member@test.kazumin.local",
-    password: "e2e-test-password-123",
-  })
-
-  if (!session || error) throw new Error("E2E auth setup failed")
-
-  // セッションをlocalStorageに注入
-  const projectRef = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]
-  await page.goto(process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://localhost:3000")
-  await page.evaluate(
-    ({ key, session }) => localStorage.setItem(key, JSON.stringify(session)),
-    { key: `sb-${projectRef}-auth-token`, session }
-  )
-
-  // storageStateとして保存（以降のテストで再利用）
-  await page.context().storageState({ path: AUTH_FILE })
-})
+Phase 5: 会員アクティビティ表示 (スキーマ変更不要、独立)
+  ├── getMembers() クエリに last_booking_at 追加
+  ├── 会員一覧に色分けバッジ追加
+  └── 管理ダッシュボードに未訪問リスト追加
 ```
 
-**playwright.config.ts でのプロジェクト設定:**
-
-```typescript
-export default defineConfig({
-  projects: [
-    // 認証セットアッププロジェクト（先に実行）
-    { name: "setup", testMatch: /.*\.setup\.ts/ },
-
-    // ゲスト向けテスト（認証不要）
-    {
-      name: "guest",
-      testMatch: /.*\/guest\/.*/,
-    },
-
-    // 会員向けテスト（認証あり）
-    {
-      name: "member",
-      testMatch: /.*\/member\/.*/,
-      dependencies: ["setup"],
-      use: { storageState: "e2e/.auth/member.json" },
-    },
-
-    // 管理者向けテスト（認証あり）
-    {
-      name: "admin",
-      testMatch: /.*\/admin\/.*/,
-      dependencies: ["setup"],
-      use: { storageState: "e2e/.auth/admin.json" },
-    },
-  ],
-})
-```
-
-**MiddlewareとCookieについての注意:**
-既存の `middleware.ts` はSupabase SSRのCookieベースセッション (`updateSession`) を使用している。
-ブラウザのlocalStorageに加えて、`@supabase/ssr` のCookieも必要になる場合がある。
-auth.setup.ts で `/login` ページを経由してUIログインする方法も有効だが、その場合は
-メール/パスワード認証フォームが必要（Google OAuthはCIで使えない）。
-
-**メール/パスワード認証フォームが存在するかの確認が必要。** 既存コードで `/login` ページに
-email+passwordフォームがあればUIログインも選択肢。なければREST APIアプローチを採用。
+**Phase 2, 4, 5 は並行実装可能。Phase 3 は Phase 1 完了後に着手。**
 
 ---
 
-### 質問5: Next.js App Routerに対するテストファイル構造
-
-**推奨ディレクトリ構造:**
+## データフロー: スロット空き判定の統合後全体像
 
 ```
-e2e/                              # E2Eテストルート（srcの外）
-├── .auth/                        # 認証ステート（.gitignore対象）
-│   ├── member.json
-│   └── admin.json
-├── fixtures.ts                   # テスト共通フィクスチャ（serviceRoleなど）
-├── global-setup.ts               # テストユーザー作成
-├── global-teardown.ts            # テストユーザー削除
-├── auth.setup.ts                 # 認証セッション取得・保存
-│
-├── guest/                        # ゲスト向けフロー（認証不要）
-│   ├── booking-flow.spec.ts      # ゲスト予約フロー（メインシナリオ）
-│   └── slot-display.spec.ts      # スロット表示確認
-│
-├── member/                       # 会員向けフロー（認証あり）
-│   ├── booking-flow.spec.ts      # 会員予約フロー（ポイント消費）
-│   ├── cancel-flow.spec.ts       # キャンセルフロー（ポイント返還）
-│   └── dashboard.spec.ts         # ダッシュボード表示
-│
-└── admin/                        # 管理者向けフロー（管理者認証あり）
-    └── booking-management.spec.ts # 予約管理操作
-```
-
-**テストファイルの命名規則:**
-- `{機能名}-flow.spec.ts` — ユーザーの完結したフローを1ファイルで記述
-- 1ファイル = 1ユーザーストーリー（複数シナリオは `test.describe` で整理）
-
-**ゲスト予約フローのサンプル構造:**
-
-```typescript
-// e2e/guest/booking-flow.spec.ts
-import { test, expect } from "@playwright/test"
-
-test.describe("ゲスト予約フロー", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/guest/booking")
-  })
-
-  test("スロットを選択して予約が完了する", async ({ page }) => {
-    // 1. スロット選択
-    await page.getByRole("button", { name: /10:00/ }).click()
-    // 2. 情報入力
-    await page.getByLabel("お名前").fill("テスト太郎")
-    await page.getByLabel("メールアドレス").fill("test@example.com")
-    // 3. 送信
-    await page.getByRole("button", { name: "予約する" }).click()
-    // 4. 完了画面確認
-    await expect(page.getByText("予約が完了しました")).toBeVisible()
-    await expect(page.getByText("Zoom")).toBeVisible()
-  })
-})
-```
-
----
-
-### 新規作成が必要なコンポーネント
-
-| コンポーネント | 種別 | パス | 目的 |
-|------------|-----|------|------|
-| Playwright設定 | 新規作成 | `playwright.config.ts` | baseURL・project設定 |
-| CIワークフロー | 新規作成 | `.github/workflows/e2e.yml` | GitHub Actions定義 |
-| グローバルセットアップ | 新規作成 | `e2e/global-setup.ts` | テストユーザー作成 |
-| グローバルティアダウン | 新規作成 | `e2e/global-teardown.ts` | テストユーザー削除 |
-| 認証セットアップ | 新規作成 | `e2e/auth.setup.ts` | セッション取得・保存 |
-| 共通フィクスチャ | 新規作成 | `e2e/fixtures.ts` | serviceRole、cleanup |
-| ゲスト予約テスト | 新規作成 | `e2e/guest/booking-flow.spec.ts` | ゲスト予約フロー |
-| 会員予約テスト | 新規作成 | `e2e/member/booking-flow.spec.ts` | 会員予約フロー |
-| .gitignore追記 | 変更 | `.gitignore` | `e2e/.auth/` を追加 |
-
-**既存ファイルの変更:**
-- `package.json` — `playwright` devDependency追加、`test:e2e` スクリプト追加
-- `vitest.config.ts` — `exclude` に `e2e/` を追加（既にある場合は不要）
-
----
-
-### ビルド順序（依存関係考慮）
-
-```
-Phase 1: 基盤整備
-  └─ Playwright インストール・設定 (playwright.config.ts)
-  └─ .gitignore に e2e/.auth/ 追加
-
-Phase 2: テストデータ管理
-  └─ global-setup.ts（テストユーザー作成）
-  └─ global-teardown.ts（テストユーザー削除）
-  └─ fixtures.ts（serviceRoleフィクスチャ）
-     ※ Phase 1 完了後
-
-Phase 3: 認証セットアップ
-  └─ auth.setup.ts（セッション取得・storageState保存）
-     ※ Phase 2 完了後（テストユーザーが必要）
-
-Phase 4: テストシナリオ実装
-  └─ guest/booking-flow.spec.ts（認証不要で先に着手可能）
-  └─ member/booking-flow.spec.ts（Phase 3 完了後）
-     ※ ゲストテストは Phase 1 完了直後から着手可能
-
-Phase 5: CI統合
-  └─ .github/workflows/e2e.yml
-  └─ GitHub Secrets 設定（SUPABASE_DEV_URL等）
-     ※ Phase 4 完了後（テストが通ってからCIに乗せる）
-```
-
----
-
-### Vercel + Supabase 特有のゴッチャ
-
-| 項目 | 問題 | 対策 |
-|------|------|------|
-| Vercel Preview URL | pushのたびにURLが変わる | `wait-for-vercel-preview` アクションでURLを動的取得 |
-| Supabase dev環境変数 | Vercel PreviewはVercel側の環境変数を使う | Vercel dashboardでdevelopブランチ用に `NEXT_PUBLIC_SUPABASE_URL` 等が設定済みか確認 |
-| service role key | CIからdev DBのデータを操作する | `SUPABASE_DEV_SERVICE_ROLE_KEY` をGitHub Secretsに追加 |
-| Middleware + SSRクッキー | `@supabase/ssr` のCookieベースセッション | `auth.setup.ts` でUIログイン後の storageState 取得が確実 |
-| 並列テスト実行 | Supabase dev無料枠は接続数制限 | `workers: 1` でシリアル実行 |
-| Zoom API呼び出し | テスト時にZoom会議が実際に作成される | devのZoom資格情報を使うか、APIモックを検討 |
-| Resend メール送信 | テスト時に実際のメールが飛ぶ可能性 | Resend devモード（`onboarding@resend.dev` ドメイン）か、テスト用メールアドレスのドメインを別途設定 |
-| Vercel無料枠のタイムアウト | Hobby plan の関数タイムアウトは10秒 | `max_timeout: 300` で最大5分待機（Previewビルド時間を考慮） |
-| RLS + service role | service roleはRLSをバイパスする | teardownで誤って他ユーザーデータを消さないよう `user_id` でフィルタリング必須 |
-
----
-
-### 既存テスト環境との共存
-
-現在の構成:
-- `vitest` — ユニットテスト (`src/__tests__/`, `src/lib/utils.test.ts`)
-- `playwright` — E2Eテスト (`e2e/`) を追加予定
-
-両者は独立して動作し、干渉しない。
-
-**package.json スクリプト案:**
-```json
-{
-  "scripts": {
-    "test": "vitest run",           // 既存: unitテスト
-    "test:watch": "vitest",          // 既存
-    "test:e2e": "playwright test",   // 新規: E2Eテスト
-    "test:e2e:ui": "playwright test --ui",  // 新規: PlaywrightのUIモード
-    "test:all": "npm run test && npm run test:e2e"  // 新規: 全テスト
-  }
-}
-```
-
----
-
-## 既存アーキテクチャ（v1.0〜v1.1 研究内容）
-
-以下のセクションは元のアーキテクチャ研究内容（変更なし）。
-
----
-
-## Standard Architecture
-
-### System Overview
-
-```
-┌───────────────────────────────────────────────────────────────────┐
-│                        Presentation Layer                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │ Guest Pages  │  │ Member Pages │  │ Admin Pages  │            │
-│  │ (SSR/RSC)    │  │ (SSR/RSC)    │  │ (SSR/RSC)    │            │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘            │
-│         │                  │                  │                    │
-├─────────┴──────────────────┴──────────────────┴────────────────────┤
-│                        Application Layer                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │ Route        │  │ Server       │  │ Server       │            │
-│  │ Handlers     │  │ Actions      │  │ Components   │            │
-│  │ (API)        │  │ (Mutations)  │  │ (Reads)      │            │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘            │
-│         │                  │                  │                    │
-├─────────┴──────────────────┴──────────────────┴────────────────────┤
-│                        Business Logic Layer                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │ Availability │  │ Booking      │  │ Point        │            │
-│  │ Calculator   │  │ Manager      │  │ Manager      │            │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘            │
-│         │                  │                  │                    │
-├─────────┴──────────────────┴──────────────────┴────────────────────┤
-│                        Integration Layer                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │ Calendar     │  │ Video        │  │ Email        │            │
-│  │ Sync         │  │ Meeting      │  │ Queue        │            │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘            │
-│         │                  │                  │                    │
-├─────────┴──────────────────┴──────────────────┴────────────────────┤
-│                        Data Layer                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │ PostgreSQL   │  │ RLS          │  │ Edge         │            │
-│  │ (Supabase)   │  │ Policies     │  │ Functions    │            │
-│  └──────────────┘  └──────────────┘  └──────────────┘            │
-└───────────────────────────────────────────────────────────────────┘
-         ↕                    ↕                    ↕
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ Google       │  │ Zoom         │  │ Resend       │
-│ Calendar API │  │ API          │  │ (Email)      │
-└──────────────┘  └──────────────┘  └──────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| **Presentation Layer** | UI表示、ユーザー入力受付 | Next.js App Router (RSC/SSR)、shadcn/ui components |
-| **Route Handlers** | 外部APIエンドポイント（予約作成、キャンセル、スロット取得） | Next.js Route Handlers (`app/api/**/route.ts`) |
-| **Server Actions** | フォーム送信、mutations | Next.js Server Actions (`use server`) |
-| **Server Components** | データフェッチ、初期レンダリング | React Server Components (default in App Router) |
-| **Availability Calculator** | 空き時間算出（営業時間、busy時間、既存予約、バッファ考慮） | TypeScript関数、PostgreSQL関数との組み合わせ |
-| **Booking Manager** | 予約作成・キャンセルのオーケストレーション（トランザクション管理） | トランザクション処理、補償処理 |
-| **Point Manager** | ポイント付与・消費・返還のロジック | PostgreSQL stored procedures（ACID保証） |
-| **Calendar Sync** | Googleカレンダーとの同期（busy時間取得、イベント追加・削除） | Google Calendar API wrapper、キャッシュ機構 |
-| **Video Meeting** | Zoom会議の作成・削除（アカウント切り替え） | Zoom API wrapper、Server-to-Server OAuth |
-| **Email Queue** | メール送信の非同期処理 | Resend API、Edge Functions (cron) |
-| **PostgreSQL** | データ永続化、トランザクション、RLS | Supabase PostgreSQL、ACID transactions |
-| **Edge Functions** | スケジュールタスク（月次ポイント付与、リマインダー、サンキューメール） | Supabase Edge Functions + pg_cron |
-
-## Recommended Project Structure
-
-```
-src/
-├── app/                          # Next.js App Router
-│   ├── (auth)/                   # 認証画面グループ
-│   │   └── login/                # ログインページ
-│   ├── (guest)/                  # ゲスト用画面グループ
-│   │   ├── page.tsx              # トップページ
-│   │   └── booking/              # 予約フロー（ゲスト）
-│   ├── (member)/                 # 会員用画面グループ
-│   │   ├── dashboard/            # マイページ
-│   │   ├── bookings/             # 予約一覧
-│   │   └── booking/              # 予約フロー（会員）
-│   ├── (admin)/                  # 管理者用画面グループ
-│   │   └── admin/                # 管理画面
-│   │       ├── dashboard/        # 管理者ダッシュボード
-│   │       ├── bookings/         # 予約管理
-│   │       ├── members/          # 会員管理
-│   │       ├── plans/            # プラン管理
-│   │       ├── menus/            # メニュー管理
-│   │       └── schedule/         # スケジュール管理
-│   └── api/                      # Route Handlers
-│       ├── slots/                # 空きスロット取得
-│       ├── bookings/             # 予約作成・キャンセル
-│       └── webhooks/             # 外部Webhook受信
-├── components/                   # Reactコンポーネント
-├── lib/                          # ビジネスロジック・ユーティリティ
-├── emails/                       # React Emailテンプレート
-└── middleware.ts                 # Next.js middleware（認証など）
-e2e/                              # Playwright E2Eテスト（srcの外）
-├── .auth/                        # 認証ステート（.gitignore）
-├── fixtures.ts
-├── global-setup.ts
-├── global-teardown.ts
-├── auth.setup.ts
-├── guest/
-│   └── booking-flow.spec.ts
-├── member/
-│   └── booking-flow.spec.ts
-└── admin/
-    └── booking-management.spec.ts
-supabase/                         # Supabaseマイグレーション・関数
-.github/
-└── workflows/
-    └── e2e.yml                   # 新規追加
-playwright.config.ts              # 新規追加
-```
-
-## Architectural Patterns
-
-### Pattern 1: Server-First Architecture with Strategic Client Components
-
-**What:** Next.js App Routerのデフォルトはサーバーコンポーネント（RSC）。クライアントコンポーネント（`'use client'`）は必要な箇所のみに限定する。
-
-**When to use:** ほぼすべてのページで使用。特に予約システムではデータの新鮮さとSEOが重要なため、サーバーサイドレンダリングを優先。
-
-**Trade-offs:**
-- **Pros:** 初期表示が高速、バンドルサイズ削減、データフェッチがシンプル、SEO対応が自然
-- **Cons:** クライアント側のインタラクティブな機能（モーダル、フォームバリデーション）は個別に`'use client'`指定が必要
-
-### Pattern 2: PostgreSQL Stored Procedures for Critical Transactions
-
-**What:** ポイント消費・返還などのクリティカルな処理はPostgreSQL関数で実装し、トランザクションとACID保証を活用する。
-
-### Pattern 3: Optimistic Locking for Double Booking Prevention
-
-**What:** 同時予約によるダブルブッキングを防ぐため、予約作成前に再度空き確認を行う。
-
-### Pattern 4: Compensating Transactions for Rollback
-
-**What:** 外部API呼び出し（Zoom、Google Calendar）が失敗した場合、既に実行した処理を補償トランザクションで巻き戻す。
-
-### Pattern 5: On-Demand Calendar Sync with Cache
-
-**What:** Googleカレンダーの同期はリアルタイムではなく、オンデマンド（ユーザーが予約ページを開いたとき）に実行。15分間キャッシュして無駄なAPI呼び出しを削減。
-
-### Pattern 6: Edge Functions for Scheduled Tasks
-
-**What:** 月次ポイント付与、リマインダーメール、サンキューメールなどの定期実行タスクはSupabase Edge Functions + pg_cronで実装。
-
-## Data Flow
-
-### Request Flow: 予約作成（会員）
-
-```
-[ユーザー: スロット選択画面]
+ユーザーが日付を選択
     ↓
-[GET /api/slots?date=2026-03-01]
-    ↓ (Server Component)
-[Availability Calculator]
-    ├─→ [Google Calendar Sync] → busy時間取得
-    ├─→ [DB: weekly_schedules] → 営業時間取得
-    ├─→ [DB: bookings] → 既存予約取得
-    └─→ 空きスロット計算
+GET /api/public/slots?date=YYYY-MM-DD
     ↓
-[Response: 空きスロット一覧]
+[並列取得]
+  ├── getCachedBusyTimes()          Google Calendar FreeBusy (15分LRUキャッシュ)
+  ├── getZoomScheduledMeetings("A") Zoom Account A スケジュール (15分LRUキャッシュ) [NEW]
+  └── getZoomScheduledMeetings("B") Zoom Account B スケジュール (15分LRUキャッシュ) [NEW]
     ↓
-[ユーザー: スロット選択 + メニュー選択 + 予約ボタン押下]
+BusyTime[] に正規化してマージ
     ↓
-[POST /api/bookings] (Route Handler)
+DB bookings テーブルの confirmed/completed 予約を取得
     ↓
-[Booking Manager.createBooking()]
-    ├─→ [1] スロット再確認（Optimistic Lock）
-    ├─→ [2] Point Manager.consumePoints() → PostgreSQL関数実行
-    ├─→ [3] Zoom.createMeeting() → Zoom API呼び出し
-    ├─→ [4] GoogleCalendar.addEvent() → Google Calendar API呼び出し
-    ├─→ [5] DB: bookingsにINSERT
-    ├─→ [6] Email.sendConfirmation() → Resend API（非同期）
-    └─→ [補償処理] エラー時は[2][3][4]をロールバック
+30分スロットを生成 (営業時間 - 休憩時間)
     ↓
-[Response: 予約確認データ + Zoomリンク]
+各スロットに対して isSlotBusy() チェック (バッファ適用)
     ↓
-[予約完了画面表示]
+available: true/false スロット一覧をレスポンス
 ```
 
-## Scaling Considerations
+---
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| **0-100 users** | 現在の設計で十分。Supabase無料枠（500MB DB、Edge Functions 500k実行/月）、Vercel無料枠で運用可能。Googleカレンダー同期はオンデマンド方式（15分キャッシュ）。 |
-| **100-1,000 users** | カレンダー同期をcronバッチに切り替え（5-10分ごとにバックグラウンド同期）。Supabase ProプランまたはVercel Proプランへアップグレード。PostgreSQLのコネクションプールサイズを増やす（Supabase pooler使用）。 |
-| **1,000+ users** | Read Replicaの導入（読み取り専用クエリを分散）。Edge Functionsのメモリ・タイムアウト最適化。Zoom API呼び出しのレート制限対策（キュー導入）。CDN活用（静的アセット、画像最適化）。 |
+## アンチパターン
 
-## Anti-Patterns
+### Zoom スケジュールをcronで事前同期しない
 
-### Anti-Pattern 1: クライアント側でビジネスロジックを実装
+**やりがちなこと:** pg_cronでZoomスケジュールをDBにキャッシュし、スロット計算時はDBを参照
+**問題:** 同期ラグ、DBテーブル追加、処理複雑化
+**正しいアプローチ:** 既存のGoogle CalendarパターンをZoomにも適用。オンデマンド取得 + 15分LRUキャッシュ。現規模（週3-5件）では十分。
 
-ビジネスロジックはすべてサーバー側（Route Handler、Server Actions、PostgreSQL関数）に集約。
+### allowed_plan_types を別テーブルにしない
 
-### Anti-Pattern 2: 外部APIエラーをそのままユーザーに返す
+**やりがちなこと:** `menu_plan_permissions` などの中間テーブルを作る
+**問題:** JOINが増える、KISS原則に反する
+**正しいアプローチ:** `meeting_menus.allowed_plan_types INTEGER[] DEFAULT NULL` のGINインデックス付き配列カラム。NULLで「全プラン対象」、要素で制限。
 
-外部APIエラーを統一フォーマットに変換し、ユーザーフレンドリーなメッセージを返す。詳細エラーはサーバーログに記録。
+### ポイント溢れ計算をアプリ側で行わない
 
-### Anti-Pattern 3: RLSポリシーを設定せずに公開スキーマのテーブルを使う
+**やりがちなこと:** TypeScript側でポイント計算してDBを複数回クエリ
+**問題:** 一貫性リスク、パフォーマンス低下
+**正しいアプローチ:** 溢れ判定SQLをEdge Function内で1クエリで実行。既存 `grant_monthly_points()` ストアドプロシージャのロジックを参照して数式を揃える。
 
-すべてのpublicスキーマのテーブルにRLSポリシーを設定。
+### アクティビティ用に last_booking_at カラムを profiles に持たない
 
-### Anti-Pattern 4: トランザクション管理なしでポイント消費と予約作成を別々に実行
+**やりがちなこと:** `profiles.last_booking_at` を追加してトリガーで更新
+**問題:** 重複管理、トリガーの副作用リスク
+**正しいアプローチ:** クエリ時に `MAX(bookings.start_time)` で集計。現規模10人では許容コスト。将来スケールする場合はマテリアライズドビューへ移行。
 
-PostgreSQL関数でトランザクションを保証するか、補償トランザクションで巻き戻す。
+---
 
-### Anti-Pattern 5: すべての処理を同期的に実行する
+## スケーリング考慮事項
 
-クリティカルな処理（ポイント消費、DB保存）のみ同期実行し、メール送信などは非同期化。
+| 規模 | アーキテクチャ調整 |
+|------|--------------------|
+| 現在 (~10人) | オンデマンドAPI取得 + LRUキャッシュ、getMembers()でJOIN集計、Edge Functions |
+| ~100人 | Zoomスケジュールのバッチ同期テーブル移行検討、getMembers()にpaginationを追加 |
+| ~1000人 | マテリアライズドビューでアクティビティ集計、pg_cron頻度最適化 |
 
-## Integration Points
+現在の規模では現行アーキテクチャの延長で全機能を実装可能。
 
-### External Services
+---
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| **Google Calendar API** | REST API + Service Account OAuth | Googleカレンダーのbusy/free時間を取得、イベント追加・削除。15分間のキャッシュで無駄なAPI呼び出しを削減。レート制限: 1秒10リクエスト |
-| **Zoom API** | REST API + Server-to-Server OAuth | アカウントA（有料）とB（無料）を環境変数で切り替え。会議作成・削除のみ使用。レート制限: 1秒10リクエスト |
-| **Resend (Email)** | REST API + React Email | 月3,000通の無料枠。予約確認、キャンセル、リマインダー、サンキューメールを送信。React Emailでテンプレート管理 |
-| **Supabase Auth** | Supabase Client SDK | Google OAuth + メール/パスワード認証。`profiles`テーブルとの自動連携（Auth trigger） |
+## 外部統合ポイント
 
-### Internal Boundaries
+### 既存（変更なし）
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| **Presentation ↔ Application** | Server Component → データフェッチ直接、Client Component → Route Handler | Server Componentsは直接Supabaseクライアントを使用。Client ComponentsはfetchでRoute Handlerを呼び出す |
-| **Application ↔ Business Logic** | TypeScript関数呼び出し | Route Handlerから`lib/booking/create.ts`などを呼び出し。依存性注入は不要（サーバーレス前提） |
-| **Business Logic ↔ Integration** | TypeScript関数呼び出し（async/await） | `lib/booking/create.ts`から`lib/integrations/zoom.ts`などを呼び出し。エラーハンドリングは各層で実施 |
-| **Business Logic ↔ Data** | Supabase Client SDK + PostgreSQL関数 | クエリはSupabase JS SDK経由。トランザクションが必要な場合はPostgreSQL関数（`supabase.rpc()`）を使用 |
-| **Edge Functions ↔ Data** | Supabase Service Role Key | 管理者権限でDB操作。RLSポリシーをバイパス可能（注意が必要） |
+| サービス | 統合パターン | 変更 |
+|----------|-------------|------|
+| Zoom S2S OAuth | `getZoomAccessToken()` + LRU token cache | なし（関数追加のみ） |
+| Google Calendar | FreeBusy API + 15分LRUキャッシュ | なし |
+| Resend | React Email テンプレート | 新規メールテンプレート追加のみ |
+| Supabase RPC | `grant_monthly_points()` など | 変更なし |
+
+### 新規追加
+
+| サービス | 統合パターン | 詳細 |
+|----------|-------------|------|
+| Zoom Meetings List API | `GET /users/me/meetings?type=scheduled` | zoom.ts に関数追加 |
+
+---
 
 ## Sources
 
-### E2Eテスト統合（v1.2追加）
-- [E2E Testing in Next.js with Playwright, Vercel, and GitHub Actions](https://enreina.com/blog/e2e-testing-in-next-js-with-playwright-vercel-and-github-actions-a-guide-with-example/)
-- [Login at Supabase via REST API in Playwright E2E Test](https://mokkapps.de/blog/login-at-supabase-via-rest-api-in-playwright-e2e-test)
-- [Authentication | Playwright](https://playwright.dev/docs/auth)
-- [End-to-End Testing Your SaaS with Playwright | MakerKit](https://makerkit.dev/blog/tutorials/playwright-testing)
-- [supawright: A Playwright test harness for E2E testing with Supabase](https://github.com/isaacharrisholt/supawright)
-- [Wait for Vercel Preview Action](https://github.com/patrickedqvist/wait-for-vercel-preview)
-- [Testing Overview | Supabase Docs](https://supabase.com/docs/guides/local-development/testing/overview)
-- [Testing Supabase Magic Login in CI with Playwright](https://www.bekapod.dev/articles/supabase-magic-login-testing-with-playwright/)
-
-### 既存アーキテクチャ（v1.0〜v1.1）
-- [Architecture Patterns For Booking Management Platform | Medium](https://medium.com/tuimm/architecture-patterns-for-booking-management-platform-53499c1e815e)
-- [Supabase Architecture | Supabase Docs](https://supabase.com/docs/guides/getting-started/architecture)
-- [Next.js Architecture in 2026 — Server-First, Client-Islands, and Scalable App Router Patterns](https://www.yogijs.tech/blog/nextjs-project-architecture-app-router)
+- 既存コード: `src/lib/integrations/zoom.ts` (Server-to-Server OAuth実装、LRU token cache)
+- 既存コード: `src/lib/integrations/google-calendar.ts` (FreeBusy API, 15分LRUキャッシュ)
+- 既存コード: `src/app/api/public/slots/route.ts` (スロット生成・busy時間判定ロジック)
+- 既存コード: `supabase/functions/monthly-point-grant/index.ts` (Edge Functionパターン)
+- 既存コード: `supabase/migrations/20260222000003_stored_procedures.sql` (ポイント計算ロジック)
+- 既存コード: `src/lib/actions/admin/members.ts` (getMembers クエリパターン)
+- [Zoom API Reference](https://developers.zoom.us/docs/api/rest/reference/zoom-api/methods/) (MEDIUM confidence — WebSearch確認)
 
 ---
-*アーキテクチャ研究: コーチングセッション予約システム（Time with Kazumin）*
-*初回調査: 2026-02-22 / E2Eテスト統合追記: 2026-03-15*
+
+*Architecture research for: Time with Kazumin v1.3 運用改善*
+*Researched: 2026-03-27*
