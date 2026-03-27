@@ -59,7 +59,10 @@
   2. 既存メニューの `allowed_plan_types` が NULL（後方互換: 全プラン表示）で動作している
   3. 「お金のブロック解消プラン」が `plans` テーブルに新規プランタイプとして登録できる
   4. GINインデックスが `allowed_plan_types` カラムに適用されている
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 12-01-PLAN.md — マイグレーション適用（カラム追加 + seedデータ + 型再生成）
 
 ### Phase 13: Zoomカレンダーブロック
 **Goal**: ZOOM_AおよびZOOM_Bのスケジュール済みミーティングが空き枠判定に反映され、Zoomと予約システムの矛盾が解消される
@@ -120,7 +123,7 @@
 | 9. Playwright基盤 | v1.2 | 2/2 | Complete | 2026-03-15 |
 | 10. テストシナリオ | v1.2 | 2/2 | Complete | 2026-03-15 |
 | 11. CI統合 | v1.2 | 1/1 | Complete | 2026-03-16 |
-| 12. DBスキーマ基盤 | v1.3 | 0/TBD | Not started | - |
+| 12. DBスキーマ基盤 | v1.3 | 0/1 | Not started | - |
 | 13. Zoomカレンダーブロック | v1.3 | 0/TBD | Not started | - |
 | 14. プランタイプ別メニュー表示 | v1.3 | 0/TBD | Not started | - |
 | 15. ポイント溢れ通知メール | v1.3 | 0/TBD | Not started | - |
