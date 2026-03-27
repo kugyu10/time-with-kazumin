@@ -1,0 +1,84 @@
+# Requirements: Time with Kazumin
+
+**Defined:** 2026-03-27
+**Core Value:** 気軽にかずみんに会いに行ける予約体験
+
+## v1 Requirements
+
+Requirements for v1.3 運用改善. Each maps to roadmap phases.
+
+### Zoomカレンダーブロック
+
+- [ ] **ZOOM-01**: ZOOM_Aのスケジュール済みミーティングを空き時間判定でブロック対象にできる
+- [ ] **ZOOM-02**: ZOOM_Bのスケジュール済みミーティングを空き時間判定でブロック対象にできる
+- [ ] **ZOOM-03**: Zoomスケジュール取得結果を15分キャッシュで効率化する（スロット一覧表示用）
+- [ ] **ZOOM-04**: 予約確定時はキャッシュを無視しZoomスケジュールをリアルタイムで再確認する
+
+### プランタイプ別メニュー表示
+
+- [ ] **MENU-01**: メニューごとに対象プランタイプを設定できる（管理画面）
+- [ ] **MENU-02**: 会員は自分のプランタイプに対応するメニューのみ予約画面に表示される
+- [ ] **MENU-03**: 「お金のブロック解消プラン」を新規プランタイプとして作成できる
+- [ ] **MENU-04**: 「お金のブロック解消120分セッション」メニューはお金のブロック解消プランの会員のみに表示される
+- [ ] **MENU-05**: プランタイプ未設定のメニューは全プランに表示される（後方互換）
+
+### ポイント溢れ通知メール
+
+- [ ] **POINT-01**: 毎月20日に、翌月ポイント付与でmax_pointsを超える会員全員にリマインダーメールを送信する
+- [ ] **POINT-02**: メール文面は管理者が編集可能なテンプレートファイルで管理する
+- [ ] **POINT-03**: メールに現在ポイント・月次付与ポイント・上限・溢れ量を記載する
+- [ ] **POINT-04**: 送信履歴をtask_execution_logsに記録し、冪等性を担保する
+- [ ] **POINT-05**: 管理画面のタスク実行履歴でポイント溢れ通知の実行状況を確認できる
+
+### 会員アクティビティ表示
+
+- [ ] **ACT-01**: 管理画面の会員一覧で、30日以上来ていない（＆次の予約なし）会員を黄色で表示する
+- [ ] **ACT-02**: 管理画面の会員一覧で、60日以上来ていない（＆次の予約なし）会員を赤で表示する
+- [ ] **ACT-03**: ダッシュボード下部に、黄色・赤の会員リストを前回セッション日時付きで表示する
+
+## v2 Requirements
+
+Deferred to future release.
+
+- **ZOOM-F01**: Zoomカレンダーブロックの根本対応（Googleカレンダー側での一元管理）
+- **MENU-F01**: プランタイプの自動切り替え（有効期限ベース）
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Zoom OAuth再認証UI | S2S OAuthのためユーザー認証不要 |
+| メニュー表示の時間帯制御 | プランタイプ制御で十分、過度な複雑性 |
+| ポイント溢れ自動消費 | ビジネスルールが未定義、手動予約を促す方針 |
+| メールテンプレートUI編集（管理画面内） | ファイルベースで編集可能にするため、管理画面UIは不要 |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ZOOM-01 | - | Pending |
+| ZOOM-02 | - | Pending |
+| ZOOM-03 | - | Pending |
+| ZOOM-04 | - | Pending |
+| MENU-01 | - | Pending |
+| MENU-02 | - | Pending |
+| MENU-03 | - | Pending |
+| MENU-04 | - | Pending |
+| MENU-05 | - | Pending |
+| POINT-01 | - | Pending |
+| POINT-02 | - | Pending |
+| POINT-03 | - | Pending |
+| POINT-04 | - | Pending |
+| POINT-05 | - | Pending |
+| ACT-01 | - | Pending |
+| ACT-02 | - | Pending |
+| ACT-03 | - | Pending |
+
+**Coverage:**
+- v1 requirements: 17 total
+- Mapped to phases: 0
+- Unmapped: 17 ⚠️
+
+---
+*Requirements defined: 2026-03-27*
+*Last updated: 2026-03-27 after initial definition*
