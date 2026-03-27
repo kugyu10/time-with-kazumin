@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
-status: planning
-stopped_at: Phase 12 context gathered
-last_updated: "2026-03-27T10:36:37.066Z"
-last_activity: 2026-03-27 — Roadmap created (Phases 12-16, 17 requirements mapped)
+status: verifying
+stopped_at: Completed 12-db-01-PLAN.md
+last_updated: "2026-03-27T11:14:13.847Z"
+last_activity: 2026-03-27
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験
-**Current focus:** v1.3 運用改善 — Phase 12 DBスキーマ基盤から開始
+**Current focus:** Phase 12 — db
 
 ## Current Position
 
 Milestone: v1.3 運用改善
-Phase: 12 of 16 (DBスキーマ基盤) — Ready to plan
-Plan: 0 of TBD
-Status: Ready to plan
-Last activity: 2026-03-27 — Roadmap created (Phases 12-16, 17 requirements mapped)
+Phase: 12 (db) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-03-27
 
 Progress: [          ] 0%
 
@@ -52,6 +52,7 @@ Progress: [          ] 0%
 | Phase 16 | 0/TBD | - | - |
 
 *Updated after each plan completion*
+| Phase 12-db P01 | 13 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - [v1.3 Research]: ZoomアカウントBはエラー3161フォールバックを必ず実装（空配列返却 + ログ）
 - [v1.3 Research]: pg_cronはUTC固定 — JST 20日09:00 = `0 0 20 * *`（UTC）
 - [v1.3 Research]: `point-overflow-notify` Edge Functionは `monthly-point-grant` パターン踏襲
+- [Phase 12-db]: allowed_plan_types INTEGER[] DEFAULT NULL — NULLで全プラン表示（後方互換）
+- [Phase 12-db]: CTE INSERT ... RETURNING パターンで SERIAL id を取得してから参照設定
+- [Phase 12-db]: GINパーシャルインデックス (WHERE IS NOT NULL) で NULL 行を除外し効率化
 
 ### Pending Todos
 
@@ -78,7 +82,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T10:36:37.063Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-db/12-CONTEXT.md
+Last session: 2026-03-27T11:14:13.844Z
+Stopped at: Completed 12-db-01-PLAN.md
+Resume file: None
 Next step: `/gsd:plan-phase 12`
