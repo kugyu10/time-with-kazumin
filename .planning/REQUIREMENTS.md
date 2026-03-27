@@ -56,29 +56,29 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ZOOM-01 | - | Pending |
-| ZOOM-02 | - | Pending |
-| ZOOM-03 | - | Pending |
-| ZOOM-04 | - | Pending |
-| MENU-01 | - | Pending |
-| MENU-02 | - | Pending |
-| MENU-03 | - | Pending |
-| MENU-04 | - | Pending |
-| MENU-05 | - | Pending |
-| POINT-01 | - | Pending |
-| POINT-02 | - | Pending |
-| POINT-03 | - | Pending |
-| POINT-04 | - | Pending |
-| POINT-05 | - | Pending |
-| ACT-01 | - | Pending |
-| ACT-02 | - | Pending |
-| ACT-03 | - | Pending |
+| ZOOM-01 | Phase 13 | Pending |
+| ZOOM-02 | Phase 13 | Pending |
+| ZOOM-03 | Phase 13 | Pending |
+| ZOOM-04 | Phase 13 | Pending |
+| MENU-01 | Phase 12 | Pending |
+| MENU-02 | Phase 14 | Pending |
+| MENU-03 | Phase 12 | Pending |
+| MENU-04 | Phase 14 | Pending |
+| MENU-05 | Phase 12 | Pending |
+| POINT-01 | Phase 15 | Pending |
+| POINT-02 | Phase 15 | Pending |
+| POINT-03 | Phase 15 | Pending |
+| POINT-04 | Phase 15 | Pending |
+| POINT-05 | Phase 15 | Pending |
+| ACT-01 | Phase 16 | Pending |
+| ACT-02 | Phase 16 | Pending |
+| ACT-03 | Phase 16 | Pending |
 
 **Coverage:**
 - v1 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17 ⚠️
+- Mapped to phases: 17
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation (v1.3 Phases 12-16)*
