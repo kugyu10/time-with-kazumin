@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
 status: verifying
-stopped_at: Completed 13-zoom-02-PLAN.md
-last_updated: "2026-03-28T10:09:49.552Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-03-28T11:48:01.624Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 5
@@ -88,7 +88,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T10:05:50.444Z
-Stopped at: Completed 13-zoom-02-PLAN.md
-Resume file: None
+Last session: 2026-03-28T11:48:01.621Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-plan-type-menu/14-CONTEXT.md
 Next step: `/gsd:plan-phase 12`
