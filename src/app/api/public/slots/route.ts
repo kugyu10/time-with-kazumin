@@ -10,6 +10,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
+import { getCachedZoomBusyTimes } from "@/lib/integrations/zoom"
 import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
 import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
@@ -188,6 +189,21 @@ export async function GET(request: Request) {
         error
       )
     }
+
+    // Zoomビジー時間の取得とマージ（Promise.allSettled 並列 per D-02）
+    const [zoomAResult, zoomBResult] = await Promise.allSettled([
+      getCachedZoomBusyTimes("A", busyTimeStart, busyTimeEnd),
+      getCachedZoomBusyTimes("B", busyTimeStart, busyTimeEnd),
+    ])
+
+    if (zoomAResult.status === "fulfilled") {
+      busyTimes = [...busyTimes, ...zoomAResult.value]
+    }
+    if (zoomBResult.status === "fulfilled") {
+      busyTimes = [...busyTimes, ...zoomBResult.value]
+    }
+
+    console.log(`[GET /api/public/slots] Total busy times after Zoom merge: ${busyTimes.length}`)
 
     // 30分単位でスロット生成
     const slots: Slot[] = []
