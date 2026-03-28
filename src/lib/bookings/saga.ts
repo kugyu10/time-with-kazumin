@@ -15,7 +15,7 @@ import {
   type BookingSagaResult,
   BookingErrorCodes,
 } from "./types"
-import { createZoomMeeting, deleteZoomMeeting } from "../integrations/zoom"
+import { createZoomMeeting, deleteZoomMeeting, getZoomScheduledMeetings } from "../integrations/zoom"
 import { addCalendarEvent, deleteCalendarEvent } from "../integrations/google-calendar"
 import { sendBookingConfirmationEmail } from "../integrations/email"
 import { generateCancelToken } from "../tokens/cancel-token"
@@ -116,6 +116,18 @@ export async function createBookingSaga(
       }
     }
     completedSteps.push("check_slot")
+
+    // Step 2.5: Check Zoom schedule conflicts (real-time, cache bypass per D-05, D-07)
+    console.log("[Saga] Step 2.5: Checking Zoom schedule conflicts")
+    const zoomConflict = await checkZoomConflict(context.startTime, context.endTime)
+    if (zoomConflict) {
+      return {
+        success: false,
+        error: "この時間帯はZoomの予定と重複しています",
+        errorCode: BookingErrorCodes.SLOT_UNAVAILABLE,
+      }
+    }
+    // Note: No completedSteps.push needed - this step is read-only, no compensation required
 
     // Step 3: Consume points with retry for lock conflicts
     console.log("[Saga] Step 3: Consuming points")
@@ -605,4 +617,31 @@ async function getMenuZoomAccount(
     .single()
 
   return (data?.zoom_account as "A" | "B") || "A"
+}
+
+/**
+ * Check Zoom schedule conflicts (real-time, cache bypass per D-07)
+ * Returns true if conflict exists
+ */
+async function checkZoomConflict(
+  startTime: string,
+  endTime: string
+): Promise<boolean> {
+  const [zoomAResult, zoomBResult] = await Promise.allSettled([
+    getZoomScheduledMeetings("A", startTime, endTime),
+    getZoomScheduledMeetings("B", startTime, endTime),
+  ])
+
+  const allBusyTimes: { start: string; end: string }[] = []
+  if (zoomAResult.status === "fulfilled") allBusyTimes.push(...zoomAResult.value)
+  if (zoomBResult.status === "fulfilled") allBusyTimes.push(...zoomBResult.value)
+
+  const start = new Date(startTime).getTime()
+  const end = new Date(endTime).getTime()
+
+  return allBusyTimes.some((busy) => {
+    const busyStart = new Date(busy.start).getTime()
+    const busyEnd = new Date(busy.end).getTime()
+    return start < busyEnd && end > busyStart
+  })
 }
