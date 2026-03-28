@@ -33,6 +33,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   is_active: z.boolean(),
   send_thank_you_email: z.boolean(),
+  allowed_plan_types: z.array(z.number()).optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -47,12 +48,14 @@ type MenuFormProps = {
     description: string | null
     is_active: boolean
     send_thank_you_email: boolean
+    allowed_plan_types: number[] | null
   }
+  plans?: Array<{ id: number; name: string }>
   onSuccess?: () => void
   onCancel?: () => void
 }
 
-export function MenuForm({ menu, onSuccess, onCancel }: MenuFormProps) {
+export function MenuForm({ menu, plans, onSuccess, onCancel }: MenuFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -66,6 +69,7 @@ export function MenuForm({ menu, onSuccess, onCancel }: MenuFormProps) {
       description: menu?.description ?? "",
       is_active: menu?.is_active ?? true,
       send_thank_you_email: menu?.send_thank_you_email ?? false,
+      allowed_plan_types: menu?.allowed_plan_types ?? [],
     },
   })
 
@@ -74,10 +78,14 @@ export function MenuForm({ menu, onSuccess, onCancel }: MenuFormProps) {
 
     startTransition(async () => {
       try {
+        const allowedPlanTypes = values.allowed_plan_types?.length
+          ? values.allowed_plan_types
+          : null
+        const submitValues = { ...values, allowed_plan_types: allowedPlanTypes }
         if (menu) {
-          await updateMenu(menu.id, values)
+          await updateMenu(menu.id, submitValues)
         } else {
-          await createMenu(values)
+          await createMenu(submitValues)
         }
         onSuccess?.()
       } catch (e) {
@@ -224,6 +232,40 @@ export function MenuForm({ menu, onSuccess, onCancel }: MenuFormProps) {
             </FormItem>
           )}
         />
+
+        {plans && plans.length > 0 && (
+          <div className="space-y-2">
+            <FormLabel>対象プランタイプ</FormLabel>
+            <FormDescription>
+              未選択の場合、全プランの会員に表示されます
+            </FormDescription>
+            {plans.map((plan) => (
+              <FormField
+                key={plan.id}
+                control={form.control}
+                name="allowed_plan_types"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value?.includes(plan.id)}
+                        onCheckedChange={(checked) => {
+                          const current = field.value ?? []
+                          field.onChange(
+                            checked
+                              ? [...current, plan.id]
+                              : current.filter((id: number) => id !== plan.id)
+                          )
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">{plan.name}</FormLabel>
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="text-sm text-destructive">{error}</div>

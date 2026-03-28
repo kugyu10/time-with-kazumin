@@ -28,9 +28,10 @@ import { deleteMenu } from "@/lib/actions/admin/menus"
 
 type MenusClientProps = {
   initialMenus: Menu[]
+  plans: Array<{ id: number; name: string }>
 }
 
-export function MenusClient({ initialMenus }: MenusClientProps) {
+export function MenusClient({ initialMenus, plans }: MenusClientProps) {
   const [menus, setMenus] = useState<Menu[]>(initialMenus)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null)
@@ -97,6 +98,7 @@ export function MenusClient({ initialMenus }: MenusClientProps) {
               </DialogDescription>
             </DialogHeader>
             <MenuForm
+              plans={plans}
               onSuccess={handleCreateSuccess}
               onCancel={() => setIsCreateOpen(false)}
             />
@@ -118,6 +120,7 @@ export function MenusClient({ initialMenus }: MenusClientProps) {
           {editingMenu && (
             <MenuForm
               menu={editingMenu}
+              plans={plans}
               onSuccess={handleEditSuccess}
               onCancel={() => setEditingMenu(null)}
             />
