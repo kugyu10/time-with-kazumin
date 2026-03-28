@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
 status: verifying
-stopped_at: Completed 16-member-activity-01-PLAN.md
-last_updated: "2026-03-28T23:04:42.113Z"
+stopped_at: "Completed 16-member-activity-02-PLAN.md (checkpoint:human-verify pending)"
+last_updated: "2026-03-28T23:08:02.957Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -60,6 +60,7 @@ Progress: [          ] 0%
 | Phase 15-point-overflow-notify P01 | 10 | 2 tasks | 4 files |
 | Phase 15-point-overflow-notify P02 | 8 | 1 tasks | 1 files |
 | Phase 16-member-activity P01 | 15 | 2 tasks | 2 files |
+| Phase 16-member-activity P02 | 10 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,8 @@ Recent decisions affecting current work:
 - [Phase 16-01]: 2段階クエリ+JS集計採用: Supabase JSの3段ネストJOINを避け、シンプルさとデバッグ容易性を優先
 - [Phase 16-01]: calcActivityStatusをexport純粋関数としてmembers.tsに配置: テスト可能性とDRY原則を両立
 - [Phase 16-01]: getFollowUpMembers()はgetMembers()を内部呼び出してフィルタ: DRY+YAGNI原則
+- [Phase 16-02]: DataTable getRowClassNameはoptional prop (TData汎用) — Member以外のテーブルへの影響なし
+- [Phase 16-02]: FollowUpListはasync Server Component — dashboard/page.tsxをasync化せずSuspenseで囲む
 
 ### Pending Todos
 
@@ -103,7 +106,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T23:04:42.111Z
-Stopped at: Completed 16-member-activity-01-PLAN.md
+Last session: 2026-03-28T23:08:02.954Z
+Stopped at: Completed 16-member-activity-02-PLAN.md (checkpoint:human-verify pending)
 Resume file: None
 Next step: `/gsd:plan-phase 12`

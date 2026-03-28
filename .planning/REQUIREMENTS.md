@@ -34,7 +34,7 @@ Requirements for v1.3 運用改善. Each maps to roadmap phases.
 
 - [x] **ACT-01**: 管理画面の会員一覧で、30日以上来ていない（＆次の予約なし）会員を黄色で表示する
 - [x] **ACT-02**: 管理画面の会員一覧で、60日以上来ていない（＆次の予約なし）会員を赤で表示する
-- [ ] **ACT-03**: ダッシュボード下部に、黄色・赤の会員リストを前回セッション日時付きで表示する
+- [x] **ACT-03**: ダッシュボード下部に、黄色・赤の会員リストを前回セッション日時付きで表示する
 
 ## v2 Requirements
 
@@ -72,7 +72,7 @@ Deferred to future release.
 | POINT-05 | Phase 15 | Complete |
 | ACT-01 | Phase 16 | Complete |
 | ACT-02 | Phase 16 | Complete |
-| ACT-03 | Phase 16 | Pending |
+| ACT-03 | Phase 16 | Complete |
 
 **Coverage:**
 - v1 requirements: 17 total
