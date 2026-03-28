@@ -24,9 +24,9 @@ Requirements for v1.3 運用改善. Each maps to roadmap phases.
 
 ### ポイント溢れ通知メール
 
-- [ ] **POINT-01**: 毎月20日に、翌月ポイント付与でmax_pointsを超える会員全員にリマインダーメールを送信する
+- [x] **POINT-01**: 毎月20日に、翌月ポイント付与でmax_pointsを超える会員全員にリマインダーメールを送信する
 - [x] **POINT-02**: メール文面は管理者が編集可能なテンプレートファイルで管理する
-- [ ] **POINT-03**: メールに現在ポイント・月次付与ポイント・上限・溢れ量を記載する
+- [x] **POINT-03**: メールに現在ポイント・月次付与ポイント・上限・溢れ量を記載する
 - [x] **POINT-04**: 送信履歴をtask_execution_logsに記録し、冪等性を担保する
 - [x] **POINT-05**: 管理画面のタスク実行履歴でポイント溢れ通知の実行状況を確認できる
 
@@ -65,9 +65,9 @@ Deferred to future release.
 | MENU-03 | Phase 12 | Complete |
 | MENU-04 | Phase 14 | Complete |
 | MENU-05 | Phase 12 | Complete |
-| POINT-01 | Phase 15 | Pending |
+| POINT-01 | Phase 15 | Complete |
 | POINT-02 | Phase 15 | Complete |
-| POINT-03 | Phase 15 | Pending |
+| POINT-03 | Phase 15 | Complete |
 | POINT-04 | Phase 15 | Complete |
 | POINT-05 | Phase 15 | Complete |
 | ACT-01 | Phase 16 | Pending |
