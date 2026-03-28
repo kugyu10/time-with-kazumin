@@ -12,6 +12,7 @@ const taskNameLabels: Record<TaskName, string> = {
   monthly_point_grant: "月次ポイント付与",
   reminder_email: "リマインダーメール",
   thank_you_email: "サンキューメール",
+  point_overflow_notify: "ポイント溢れ通知",
 }
 
 const statusLabels: Record<TaskStatus, string> = {
