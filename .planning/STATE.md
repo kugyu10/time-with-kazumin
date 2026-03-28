@@ -94,6 +94,10 @@ Recent decisions affecting current work:
 - [Phase 16-02]: DataTable getRowClassNameはoptional prop (TData汎用) — Member以外のテーブルへの影響なし
 - [Phase 16-02]: FollowUpListはasync Server Component — dashboard/page.tsxをasync化せずSuspenseで囲む
 
+### Roadmap Evolution
+
+- Phase 17 added: E2Eテスト修正 — vitest設定でe2eディレクトリを除外し、Playwright E2Eテストがvitestで誤実行されない状態にする
+
 ### Pending Todos
 
 None yet.

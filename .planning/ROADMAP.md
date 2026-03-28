@@ -144,3 +144,13 @@ Plans:
 | 14. プランタイプ別メニュー表示 | 2/2 | Complete    | 2026-03-28 | - |
 | 15. ポイント溢れ通知メール | 2/2 | Complete    | 2026-03-28 | - |
 | 16. 会員アクティビティ表示 | 2/2 | Complete    | 2026-03-28 | - |
+
+### Phase 17: E2Eテスト修正
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 17 to break down)
