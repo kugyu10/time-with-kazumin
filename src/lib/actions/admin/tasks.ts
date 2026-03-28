@@ -5,7 +5,7 @@ import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 
 // Types
 export type TaskStatus = "success" | "partial_success" | "failed"
-export type TaskName = "monthly_point_grant" | "reminder_email" | "thank_you_email"
+export type TaskName = "monthly_point_grant" | "reminder_email" | "thank_you_email" | "point_overflow_notify"
 
 export type TaskLog = {
   id: number
