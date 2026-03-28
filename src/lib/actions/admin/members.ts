@@ -5,6 +5,8 @@ import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { sendWelcomeEmail } from "@/lib/integrations/email"
+import { calcActivityStatus, type ActivityStatus } from "@/lib/utils/activity-status"
+export type { ActivityStatus } from "@/lib/utils/activity-status"
 
 // Validation schema for member creation
 const CreateMemberSchema = z.object({
@@ -14,8 +16,6 @@ const CreateMemberSchema = z.object({
 })
 
 type CreateMemberInput = z.infer<typeof CreateMemberSchema>
-
-export type ActivityStatus = 'normal' | 'yellow' | 'red'
 
 export type Member = {
   id: string
@@ -37,22 +37,8 @@ export type Member = {
   activity_status: ActivityStatus
 }
 
-/**
- * Calculate activity status based on last session date and future booking
- */
-export function calcActivityStatus(
-  lastSessionAt: string | null,
-  hasFutureBooking: boolean
-): ActivityStatus {
-  if (hasFutureBooking) return 'normal'
-  if (lastSessionAt === null) return 'red'
-  const daysAgo = Math.floor(
-    (Date.now() - new Date(lastSessionAt).getTime()) / (1000 * 60 * 60 * 24)
-  )
-  if (daysAgo >= 60) return 'red'
-  if (daysAgo >= 30) return 'yellow'
-  return 'normal'
-}
+// calcActivityStatus is imported from @/lib/utils/activity-status
+// (separated because "use server" files cannot export sync functions)
 
 /**
  * Check if the current user is admin

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { calcActivityStatus } from '@/lib/actions/admin/members'
+import { calcActivityStatus } from '@/lib/utils/activity-status'
 
 // 基準日: 2026-03-29T00:00:00Z = 1774742400000 ms
 const BASE_NOW = 1774742400000
