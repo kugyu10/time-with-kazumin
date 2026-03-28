@@ -15,6 +15,8 @@ const CreateMemberSchema = z.object({
 
 type CreateMemberInput = z.infer<typeof CreateMemberSchema>
 
+export type ActivityStatus = 'normal' | 'yellow' | 'red'
+
 export type Member = {
   id: string
   email: string
@@ -30,6 +32,26 @@ export type Member = {
       name: string
     }
   } | null
+  last_session_at: string | null
+  has_future_booking: boolean
+  activity_status: ActivityStatus
+}
+
+/**
+ * Calculate activity status based on last session date and future booking
+ */
+export function calcActivityStatus(
+  lastSessionAt: string | null,
+  hasFutureBooking: boolean
+): ActivityStatus {
+  if (hasFutureBooking) return 'normal'
+  if (lastSessionAt === null) return 'red'
+  const daysAgo = Math.floor(
+    (Date.now() - new Date(lastSessionAt).getTime()) / (1000 * 60 * 60 * 24)
+  )
+  if (daysAgo >= 60) return 'red'
+  if (daysAgo >= 30) return 'yellow'
+  return 'normal'
 }
 
 /**
@@ -58,14 +80,14 @@ async function requireAdmin() {
 }
 
 /**
- * Get all members with their plans
+ * Get all members with their plans and activity status
  */
 export async function getMembers(): Promise<Member[]> {
   await requireAdmin()
 
   const supabase = getSupabaseServiceRole()
 
-  // Get profiles with role='member' and join member_plans
+  // Step 1: Get profiles with role='member' and join member_plans
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profiles, error } = await (supabase as any)
     .from("profiles")
@@ -96,9 +118,56 @@ export async function getMembers(): Promise<Member[]> {
     throw new Error(`会員の取得に失敗しました: ${error.message}`)
   }
 
+  // Step 2: Collect member_plan_ids for bookings queries
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const memberPlanIds = (profiles ?? []).map((p: any) => p.member_plans?.[0]?.id).filter(Boolean) as number[]
+
+  // Step 2a: Get last completed session per member_plan
+  const { data: lastSessions } = memberPlanIds.length > 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? await (supabase as any)
+        .from("bookings")
+        .select("member_plan_id, end_time")
+        .in("member_plan_id", memberPlanIds)
+        .eq("status", "completed")
+        .order("end_time", { ascending: false })
+    : { data: [] }
+
+  // Step 2b: Get future confirmed bookings per member_plan
+  const now = new Date().toISOString()
+  const { data: futureBookings } = memberPlanIds.length > 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? await (supabase as any)
+        .from("bookings")
+        .select("member_plan_id")
+        .in("member_plan_id", memberPlanIds)
+        .eq("status", "confirmed")
+        .gt("start_time", now)
+    : { data: [] }
+
+  // Aggregate into Maps/Sets
+  const lastSessionMap = new Map<number, string>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of (lastSessions ?? []) as any[]) {
+    if (!lastSessionMap.has(row.member_plan_id)) {
+      lastSessionMap.set(row.member_plan_id, row.end_time)
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hasFutureBookingSet = new Set((futureBookings ?? []).map((r: any) => r.member_plan_id))
+
   // Transform data to match Member type
-  return (profiles ?? []).map((profile) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (profiles ?? []).map((profile: any) => {
     const memberPlan = profile.member_plans?.[0]
+    const memberPlanId = memberPlan?.id as number | undefined
+    const lastSessionAt = memberPlanId != null ? (lastSessionMap.get(memberPlanId) ?? null) : null
+    const hasFutureBooking = memberPlanId != null ? hasFutureBookingSet.has(memberPlanId) : false
+    // active会員のみactivity_statusを計算、それ以外はnormal
+    const activity_status = memberPlan?.status === 'active'
+      ? calcActivityStatus(lastSessionAt, hasFutureBooking)
+      : 'normal' as ActivityStatus
+
     return {
       id: profile.id,
       email: profile.email,
@@ -114,8 +183,23 @@ export async function getMembers(): Promise<Member[]> {
           name: memberPlan.plans?.name ?? "不明",
         },
       } : null,
+      last_session_at: lastSessionAt,
+      has_future_booking: hasFutureBooking,
+      activity_status,
     }
   })
+}
+
+/**
+ * Get members that need follow-up (yellow or red activity status)
+ */
+export async function getFollowUpMembers(): Promise<Member[]> {
+  await requireAdmin()
+  const all = await getMembers()
+  return all.filter(m =>
+    m.member_plan?.status === 'active' &&
+    (m.activity_status === 'yellow' || m.activity_status === 'red')
+  )
 }
 
 /**
