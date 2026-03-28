@@ -4,7 +4,7 @@ milestone: v1.3
 milestone_name: 運用改善
 status: verifying
 stopped_at: Completed 14-plan-type-menu/14-02-PLAN.md
-last_updated: "2026-03-28T12:45:53.643Z"
+last_updated: "2026-03-28T12:51:03.458Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 5
