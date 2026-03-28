@@ -443,17 +443,14 @@ describe("Zoom Integration", () => {
           json: () => Promise.resolve({ access_token: "token-1", token_type: "bearer", expires_in: 3600 }),
         })
         .mockResolvedValueOnce(meetingsResponse)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ access_token: "token-2", token_type: "bearer", expires_in: 3600 }),
-        })
         .mockResolvedValueOnce(meetingsResponse)
 
       await getZoomScheduledMeetings("A", FROM, TO)
       await getZoomScheduledMeetings("A", FROM, TO)
 
-      // token取得2回 + meetings取得2回 = 4回
-      expect(mockFetch).toHaveBeenCalledTimes(4)
+      // token取得1回（キャッシュ済み） + meetings取得2回 = 3回
+      // スケジュールキャッシュはバイパスされるため、meetingsエンドポイントは毎回呼ばれる
+      expect(mockFetch).toHaveBeenCalledTimes(3)
     })
   })
 
@@ -514,18 +511,15 @@ describe("Zoom Integration", () => {
           json: () => Promise.resolve({ access_token: "token-1", token_type: "bearer", expires_in: 3600 }),
         })
         .mockResolvedValueOnce(emptyMeetings)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ access_token: "token-2", token_type: "bearer", expires_in: 3600 }),
-        })
         .mockResolvedValueOnce(emptyMeetings)
 
       await getCachedZoomBusyTimes("A", START, END)
       clearZoomScheduleCache()
       await getCachedZoomBusyTimes("A", START, END)
 
-      // キャッシュクリア後に再取得: token×2 + meetings×2 = 4回
-      expect(mockFetch).toHaveBeenCalledTimes(4)
+      // キャッシュクリア後に再取得: token×1（キャッシュ済み） + meetings×2 = 3回
+      // スケジュールキャッシュがクリアされたためmeetings APIは再呼び出しされる
+      expect(mockFetch).toHaveBeenCalledTimes(3)
     })
   })
 
