@@ -14,6 +14,7 @@ const MenuSchema = z.object({
   description: z.string().optional().nullable(),
   is_active: z.boolean(),
   send_thank_you_email: z.boolean(),
+  allowed_plan_types: z.array(z.number()).nullable().optional(),
 })
 
 type MenuInput = z.infer<typeof MenuSchema>
@@ -63,6 +64,7 @@ export async function createMenu(data: MenuInput) {
       description: validated.description ?? null,
       is_active: validated.is_active,
       send_thank_you_email: validated.send_thank_you_email,
+      allowed_plan_types: validated.allowed_plan_types ?? null,
     })
     .select()
     .single() as { data: { id: number } | null; error: { message: string } | null }
@@ -95,6 +97,7 @@ export async function updateMenu(id: number, data: MenuInput) {
       description: validated.description ?? null,
       is_active: validated.is_active,
       send_thank_you_email: validated.send_thank_you_email,
+      allowed_plan_types: validated.allowed_plan_types ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -156,6 +159,7 @@ export async function getMenus() {
         description: string | null
         is_active: boolean
         send_thank_you_email: boolean
+        allowed_plan_types: number[] | null
         created_at: string
         updated_at: string
       }> | null
