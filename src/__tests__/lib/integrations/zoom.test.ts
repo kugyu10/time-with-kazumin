@@ -4,6 +4,9 @@ import {
   createZoomMeeting,
   deleteZoomMeeting,
   clearTokenCache,
+  getZoomScheduledMeetings,
+  getCachedZoomBusyTimes,
+  clearZoomScheduleCache,
 } from "@/lib/integrations/zoom"
 
 // Mock global fetch
@@ -14,6 +17,7 @@ describe("Zoom Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     clearTokenCache()
+    clearZoomScheduleCache()
   })
 
   afterEach(() => {
@@ -322,6 +326,206 @@ describe("Zoom Integration", () => {
       const result = await deleteZoomMeeting("nonexistent", "A")
 
       expect(result.success).toBe(false)
+    })
+  })
+
+  describe("getZoomScheduledMeetings", () => {
+    const FROM = "2026-04-01T00:00:00Z"
+    const TO = "2026-04-07T23:59:59Z"
+
+    it("should return empty array when account is not configured", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "")
+
+      const result = await getZoomScheduledMeetings("A", FROM, TO)
+
+      expect(result).toEqual([])
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it("should convert Zoom meetings to BusyTime[]", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "test-token", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              page_count: 1,
+              page_size: 30,
+              total_records: 1,
+              next_page_token: "",
+              meetings: [
+                {
+                  id: 1,
+                  uuid: "abc",
+                  topic: "Test Meeting",
+                  type: 2,
+                  start_time: "2026-04-01T01:00:00Z",
+                  duration: 60,
+                  timezone: "Asia/Tokyo",
+                  status: "waiting",
+                },
+              ],
+            }),
+        })
+
+      const result = await getZoomScheduledMeetings("A", FROM, TO)
+
+      expect(result).toEqual([{ start: "2026-04-01T01:00:00.000Z", end: "2026-04-01T02:00:00.000Z" }])
+    })
+
+    it("should return empty array on error 3161 response", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "test-token", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({ code: 3161, message: "Meeting hosting capability is blocked." }),
+        })
+
+      const result = await getZoomScheduledMeetings("A", FROM, TO)
+
+      expect(result).toEqual([])
+    })
+
+    it("should return empty array when fetch throws", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "test-token", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockRejectedValueOnce(new Error("network error"))
+
+      const result = await getZoomScheduledMeetings("A", FROM, TO)
+
+      expect(result).toEqual([])
+    })
+
+    it("should always call API without caching (cache bypass for booking confirmation per D-07)", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      const meetingsResponse = {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            page_count: 1,
+            page_size: 30,
+            total_records: 0,
+            next_page_token: "",
+            meetings: [],
+          }),
+      }
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "token-1", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce(meetingsResponse)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "token-2", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce(meetingsResponse)
+
+      await getZoomScheduledMeetings("A", FROM, TO)
+      await getZoomScheduledMeetings("A", FROM, TO)
+
+      // token取得2回 + meetings取得2回 = 4回
+      expect(mockFetch).toHaveBeenCalledTimes(4)
+    })
+  })
+
+  describe("getCachedZoomBusyTimes", () => {
+    const START = "2026-04-01T00:00:00Z"
+    const END = "2026-04-07T23:59:59Z"
+
+    it("should return cached result on second call (fetch called once for meetings)", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "test-token", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              page_count: 1,
+              page_size: 30,
+              total_records: 0,
+              next_page_token: "",
+              meetings: [],
+            }),
+        })
+
+      await getCachedZoomBusyTimes("A", START, END)
+      const result = await getCachedZoomBusyTimes("A", START, END)
+
+      expect(result).toEqual([])
+      // token取得1回 + meetings取得1回 = 2回（2回目はキャッシュ）
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it("should re-fetch after clearZoomScheduleCache()", async () => {
+      vi.stubEnv("ZOOM_ACCOUNT_A_ACCOUNT_ID", "account-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_ID", "client-id")
+      vi.stubEnv("ZOOM_ACCOUNT_A_CLIENT_SECRET", "client-secret")
+
+      const emptyMeetings = {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            page_count: 1,
+            page_size: 30,
+            total_records: 0,
+            next_page_token: "",
+            meetings: [],
+          }),
+      }
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "token-1", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce(emptyMeetings)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "token-2", token_type: "bearer", expires_in: 3600 }),
+        })
+        .mockResolvedValueOnce(emptyMeetings)
+
+      await getCachedZoomBusyTimes("A", START, END)
+      clearZoomScheduleCache()
+      await getCachedZoomBusyTimes("A", START, END)
+
+      // キャッシュクリア後に再取得: token×2 + meetings×2 = 4回
+      expect(mockFetch).toHaveBeenCalledTimes(4)
     })
   })
 
