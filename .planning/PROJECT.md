@@ -164,4 +164,4 @@
 | GitHub Actions 2-job構成 | wait-for-preview→e2eの分離で障害切り分け容易 | ✓ Validated (v1.2) |
 
 ---
-*Last updated: 2026-03-28 after Phase 14 (プランタイプ別メニュー表示) complete — 会員予約画面でプランタイプ別メニューフィルタ、管理画面でallowed_plan_typesチェックボックスUI*
+*Last updated: 2026-03-29 after Phase 15 (ポイント溢れ通知メール) complete — 毎月20日にポイント溢れ予定会員へ自動リマインダーメール送信Edge Function + pg_cron*
