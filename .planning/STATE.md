@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
-status: executing
-stopped_at: Completed 13-zoom-01-PLAN.md
-last_updated: "2026-03-28T10:00:57.571Z"
+status: verifying
+stopped_at: Completed 13-zoom-02-PLAN.md
+last_updated: "2026-03-28T10:05:50.447Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Milestone: v1.3 運用改善
 Phase: 13 (zoom) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-28
 
 Progress: [          ] 0%
@@ -54,6 +54,7 @@ Progress: [          ] 0%
 *Updated after each plan completion*
 | Phase 12-db P01 | 13 | 2 tasks | 3 files |
 | Phase 13-zoom P01 | 15 | 1 tasks | 2 files |
+| Phase 13-zoom P02 | 8 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,8 @@ Recent decisions affecting current work:
 - [Phase 12-db]: GINパーシャルインデックス (WHERE IS NOT NULL) で NULL 行を除外し効率化
 - [Phase 13-zoom]: getZoomScheduledMeetings はトークンキャッシュを使いつつスケジュールキャッシュをバイパスする（予約確定時のリアルタイム確認保証）
 - [Phase 13-zoom]: getCachedZoomBusyTimes は15分TTL LRUCacheを使い通常のスロット表示フローに使用する
+- [Phase 13-zoom]: getCachedZoomBusyTimes（15分TTL）をスロットAPI用に使用、getZoomScheduledMeetings（キャッシュバイパス）を予約確定時に使用
+- [Phase 13-zoom]: Step 2.5はcompletedStepsに追加しない（読み取り専用ステップ、補償不要）
 
 ### Pending Todos
 
@@ -85,7 +88,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T10:00:57.568Z
-Stopped at: Completed 13-zoom-01-PLAN.md
+Last session: 2026-03-28T10:05:50.444Z
+Stopped at: Completed 13-zoom-02-PLAN.md
 Resume file: None
 Next step: `/gsd:plan-phase 12`
