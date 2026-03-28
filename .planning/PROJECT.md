@@ -164,4 +164,4 @@
 | GitHub Actions 2-job構成 | wait-for-preview→e2eの分離で障害切り分け容易 | ✓ Validated (v1.2) |
 
 ---
-*Last updated: 2026-03-27 after v1.3 運用改善 milestone started*
+*Last updated: 2026-03-28 after Phase 13 (Zoomカレンダーブロック) complete — Zoom A/Bスケジュール済みミーティングが空き枠判定に反映*
