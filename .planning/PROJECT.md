@@ -164,4 +164,4 @@
 | GitHub Actions 2-job構成 | wait-for-preview→e2eの分離で障害切り分け容易 | ✓ Validated (v1.2) |
 
 ---
-*Last updated: 2026-03-28 after Phase 13 (Zoomカレンダーブロック) complete — Zoom A/Bスケジュール済みミーティングが空き枠判定に反映*
+*Last updated: 2026-03-28 after Phase 14 (プランタイプ別メニュー表示) complete — 会員予約画面でプランタイプ別メニューフィルタ、管理画面でallowed_plan_typesチェックボックスUI*
