@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
-status: verifying
-stopped_at: Phase 13 context gathered
-last_updated: "2026-03-28T09:11:10.979Z"
-last_activity: 2026-03-27
+status: executing
+stopped_at: Completed 13-zoom-01-PLAN.md
+last_updated: "2026-03-28T10:00:57.571Z"
+last_activity: 2026-03-28
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 3
+  completed_plans: 2
   percent: 0
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 気軽にかずみんに会いに行ける予約体験
-**Current focus:** Phase 12 — db
+**Current focus:** Phase 13 — zoom
 
 ## Current Position
 
 Milestone: v1.3 運用改善
-Phase: 12 (db) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-03-27
+Phase: 13 (zoom) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-03-28
 
 Progress: [          ] 0%
 
@@ -53,6 +53,7 @@ Progress: [          ] 0%
 
 *Updated after each plan completion*
 | Phase 12-db P01 | 13 | 2 tasks | 3 files |
+| Phase 13-zoom P01 | 15 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase 12-db]: allowed_plan_types INTEGER[] DEFAULT NULL — NULLで全プラン表示（後方互換）
 - [Phase 12-db]: CTE INSERT ... RETURNING パターンで SERIAL id を取得してから参照設定
 - [Phase 12-db]: GINパーシャルインデックス (WHERE IS NOT NULL) で NULL 行を除外し効率化
+- [Phase 13-zoom]: getZoomScheduledMeetings はトークンキャッシュを使いつつスケジュールキャッシュをバイパスする（予約確定時のリアルタイム確認保証）
+- [Phase 13-zoom]: getCachedZoomBusyTimes は15分TTL LRUCacheを使い通常のスロット表示フローに使用する
 
 ### Pending Todos
 
@@ -82,7 +85,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T09:11:10.974Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-zoom/13-CONTEXT.md
+Last session: 2026-03-28T10:00:57.568Z
+Stopped at: Completed 13-zoom-01-PLAN.md
+Resume file: None
 Next step: `/gsd:plan-phase 12`

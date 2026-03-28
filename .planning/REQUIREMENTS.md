@@ -9,18 +9,18 @@ Requirements for v1.3 運用改善. Each maps to roadmap phases.
 
 ### Zoomカレンダーブロック
 
-- [ ] **ZOOM-01**: ZOOM_Aのスケジュール済みミーティングを空き時間判定でブロック対象にできる
-- [ ] **ZOOM-02**: ZOOM_Bのスケジュール済みミーティングを空き時間判定でブロック対象にできる
-- [ ] **ZOOM-03**: Zoomスケジュール取得結果を15分キャッシュで効率化する（スロット一覧表示用）
-- [ ] **ZOOM-04**: 予約確定時はキャッシュを無視しZoomスケジュールをリアルタイムで再確認する
+- [x] **ZOOM-01**: ZOOM_Aのスケジュール済みミーティングを空き時間判定でブロック対象にできる
+- [x] **ZOOM-02**: ZOOM_Bのスケジュール済みミーティングを空き時間判定でブロック対象にできる
+- [x] **ZOOM-03**: Zoomスケジュール取得結果を15分キャッシュで効率化する（スロット一覧表示用）
+- [x] **ZOOM-04**: 予約確定時はキャッシュを無視しZoomスケジュールをリアルタイムで再確認する
 
 ### プランタイプ別メニュー表示
 
-- [ ] **MENU-01**: メニューごとに対象プランタイプを設定できる（管理画面）
+- [x] **MENU-01**: メニューごとに対象プランタイプを設定できる（管理画面）
 - [ ] **MENU-02**: 会員は自分のプランタイプに対応するメニューのみ予約画面に表示される
-- [ ] **MENU-03**: 「お金のブロック解消プラン」を新規プランタイプとして作成できる
+- [x] **MENU-03**: 「お金のブロック解消プラン」を新規プランタイプとして作成できる
 - [ ] **MENU-04**: 「お金のブロック解消120分セッション」メニューはお金のブロック解消プランの会員のみに表示される
-- [ ] **MENU-05**: プランタイプ未設定のメニューは全プランに表示される（後方互換）
+- [x] **MENU-05**: プランタイプ未設定のメニューは全プランに表示される（後方互換）
 
 ### ポイント溢れ通知メール
 
@@ -56,15 +56,15 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ZOOM-01 | Phase 13 | Pending |
-| ZOOM-02 | Phase 13 | Pending |
-| ZOOM-03 | Phase 13 | Pending |
-| ZOOM-04 | Phase 13 | Pending |
-| MENU-01 | Phase 12 | Pending |
+| ZOOM-01 | Phase 13 | Complete |
+| ZOOM-02 | Phase 13 | Complete |
+| ZOOM-03 | Phase 13 | Complete |
+| ZOOM-04 | Phase 13 | Complete |
+| MENU-01 | Phase 12 | Complete |
 | MENU-02 | Phase 14 | Pending |
-| MENU-03 | Phase 12 | Pending |
+| MENU-03 | Phase 12 | Complete |
 | MENU-04 | Phase 14 | Pending |
-| MENU-05 | Phase 12 | Pending |
+| MENU-05 | Phase 12 | Complete |
 | POINT-01 | Phase 15 | Pending |
 | POINT-02 | Phase 15 | Pending |
 | POINT-03 | Phase 15 | Pending |

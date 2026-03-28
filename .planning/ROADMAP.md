@@ -77,7 +77,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — Zoomスケジュール取得関数 + キャッシュ + テスト
+- [x] 13-01-PLAN.md — Zoomスケジュール取得関数 + キャッシュ + テスト
 - [ ] 13-02-PLAN.md — スロットAPIへのZoomビジー時間マージ + Sagaリアルタイム競合チェック
 
 ### Phase 14: プランタイプ別メニュー表示
@@ -128,7 +128,7 @@ Plans:
 | 10. テストシナリオ | v1.2 | 2/2 | Complete | 2026-03-15 |
 | 11. CI統合 | v1.2 | 1/1 | Complete | 2026-03-16 |
 | 12. DBスキーマ基盤 | v1.3 | 1/1 | Complete   | 2026-03-27 |
-| 13. Zoomカレンダーブロック | v1.3 | 0/2 | Not started | - |
+| 13. Zoomカレンダーブロック | v1.3 | 1/2 | In Progress|  |
 | 14. プランタイプ別メニュー表示 | v1.3 | 0/TBD | Not started | - |
 | 15. ポイント溢れ通知メール | v1.3 | 0/TBD | Not started | - |
 | 16. 会員アクティビティ表示 | v1.3 | 0/TBD | Not started | - |
