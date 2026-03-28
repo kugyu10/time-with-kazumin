@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
 status: verifying
-stopped_at: Phase 16 context gathered
-last_updated: "2026-03-28T22:21:01.023Z"
+stopped_at: Completed 16-member-activity-01-PLAN.md
+last_updated: "2026-03-28T23:04:42.113Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 9
+  completed_plans: 8
   percent: 0
 ---
 
@@ -59,6 +59,7 @@ Progress: [          ] 0%
 | Phase 14-plan-type-menu P02 | 12 | 2 tasks | 3 files |
 | Phase 15-point-overflow-notify P01 | 10 | 2 tasks | 4 files |
 | Phase 15-point-overflow-notify P02 | 8 | 1 tasks | 1 files |
+| Phase 16-member-activity P01 | 15 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,9 @@ Recent decisions affecting current work:
 - [Phase Phase 15-01]: pg_cron スケジュールは UTC 固定 0 0 20 * * (JST 20日 09:00)
 - [Phase 15-02]: 冪等性を task_execution_logs ベースで実装 (D-09) — monthly-point-grant と異なり point_transactions ではなく task_execution_logs で当月 point_overflow_notify 完了を確認
 - [Phase 15-02]: インライン HTML テンプレート — Deno 環境では React Email を使わず renderPointOverflowHtml 関数で生成 (check-reminder-emails パターン)
+- [Phase 16-01]: 2段階クエリ+JS集計採用: Supabase JSの3段ネストJOINを避け、シンプルさとデバッグ容易性を優先
+- [Phase 16-01]: calcActivityStatusをexport純粋関数としてmembers.tsに配置: テスト可能性とDRY原則を両立
+- [Phase 16-01]: getFollowUpMembers()はgetMembers()を内部呼び出してフィルタ: DRY+YAGNI原則
 
 ### Pending Todos
 
@@ -99,7 +103,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T22:21:01.020Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-member-activity/16-CONTEXT.md
+Last session: 2026-03-28T23:04:42.111Z
+Stopped at: Completed 16-member-activity-01-PLAN.md
+Resume file: None
 Next step: `/gsd:plan-phase 12`
