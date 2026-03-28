@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 13-zoom]: getCachedZoomBusyTimes は15分TTL LRUCacheを使い通常のスロット表示フローに使用する
 - [Phase 13-zoom]: getCachedZoomBusyTimes（15分TTL）をスロットAPI用に使用、getZoomScheduledMeetings（キャッシュバイパス）を予約確定時に使用
 - [Phase 13-zoom]: Step 2.5はcompletedStepsに追加しない（読み取り専用ステップ、補償不要）
+- [Phase 14-plan-type-menu P01]: 空配列→NULL変換をonSubmit内で行う（D-06: 未選択=全プラン表示）
+- [Phase 14-plan-type-menu P01]: plans一覧はServer Component (page.tsx) でフェッチしClient Componentにprops経由で渡す
 - [Phase 14-plan-type-menu]: filterMenusByPlanType はジェネリクスで allowed_plan_types を持つ任意型に適用可能、フィルタ後に除外して MenuSelect に渡す
 
 ### Pending Todos
