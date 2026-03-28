@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
 status: verifying
-stopped_at: Phase 15 context gathered
-last_updated: "2026-03-28T16:34:09.414Z"
+stopped_at: Completed 15-point-overflow-notify-01-PLAN.md
+last_updated: "2026-03-28T20:36:32.622Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
   percent: 0
 ---
 
@@ -57,6 +57,7 @@ Progress: [          ] 0%
 | Phase 13-zoom P02 | 8 | 2 tasks | 3 files |
 | Phase 14-plan-type-menu P01 | 10 | 2 tasks | 5 files |
 | Phase 14-plan-type-menu P02 | 12 | 2 tasks | 3 files |
+| Phase 15-point-overflow-notify P01 | 10 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 14-plan-type-menu P01]: 空配列→NULL変換をonSubmit内で行う（D-06: 未選択=全プラン表示）
 - [Phase 14-plan-type-menu P01]: plans一覧はServer Component (page.tsx) でフェッチしClient Componentにprops経由で渡す
 - [Phase 14-plan-type-menu]: filterMenusByPlanType はジェネリクスで allowed_plan_types を持つ任意型に適用可能、フィルタ後に除外して MenuSelect に渡す
+- [Phase Phase 15-01]: CHECK 制約拡張は DROP CONSTRAINT IF EXISTS + ADD CONSTRAINT パターン（PostgreSQL は直接変更不可）
+- [Phase Phase 15-01]: pg_cron スケジュールは UTC 固定 0 0 20 * * (JST 20日 09:00)
 
 ### Pending Todos
 
@@ -93,7 +96,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T16:34:09.410Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-point-overflow-notify/15-CONTEXT.md
+Last session: 2026-03-28T20:36:32.618Z
+Stopped at: Completed 15-point-overflow-notify-01-PLAN.md
+Resume file: None
 Next step: `/gsd:plan-phase 12`
