@@ -17,18 +17,18 @@ created: 2026-03-28
 
 | Property | Value |
 |----------|-------|
-| **Framework** | jest 29.x (既存) |
-| **Config file** | `jest.config.ts` |
-| **Quick run command** | `npx jest --testPathPattern="zoom" --no-coverage` |
-| **Full suite command** | `npx jest --no-coverage` |
+| **Framework** | vitest ^4.0.18 (既存) |
+| **Config file** | `vitest.config.ts` |
+| **Quick run command** | `npx vitest run src/__tests__/lib/integrations/zoom.test.ts` |
+| **Full suite command** | `npx vitest run` |
 | **Estimated runtime** | ~15 seconds |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `npx jest --testPathPattern="zoom" --no-coverage`
-- **After every plan wave:** Run `npx jest --no-coverage`
+- **After every task commit:** Run `npx vitest run src/__tests__/lib/integrations/zoom.test.ts`
+- **After every plan wave:** Run `npx vitest run`
 - **Before `/gsd:verify-work`:** Full suite must be green
 - **Max feedback latency:** 15 seconds
 
@@ -38,9 +38,9 @@ created: 2026-03-28
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 13-01-01 | 01 | 1 | ZOOM-01, ZOOM-02 | unit | `npx jest --testPathPattern="zoom" --no-coverage` | ❌ W0 | ⬜ pending |
-| 13-01-02 | 01 | 1 | ZOOM-03 | unit | `npx jest --testPathPattern="zoom" --no-coverage` | ❌ W0 | ⬜ pending |
-| 13-01-03 | 01 | 1 | ZOOM-04 | unit | `npx jest --testPathPattern="zoom" --no-coverage` | ❌ W0 | ⬜ pending |
+| 13-01-01 | 01 | 1 | ZOOM-01, ZOOM-02, ZOOM-03 | unit | `npx vitest run src/__tests__/lib/integrations/zoom.test.ts` | ✅ (追記) | ⬜ pending |
+| 13-02-01 | 02 | 2 | ZOOM-01, ZOOM-02, ZOOM-03 | integration | `npx vitest run` | ✅ | ⬜ pending |
+| 13-02-02 | 02 | 2 | ZOOM-04 | unit | `npx vitest run src/__tests__/lib/integrations/zoom.test.ts` | ✅ (追記) | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -48,10 +48,10 @@ created: 2026-03-28
 
 ## Wave 0 Requirements
 
-- [ ] `src/__tests__/lib/integrations/zoom-schedule.test.ts` — stubs for ZOOM-01, ZOOM-02, ZOOM-03, ZOOM-04
+- [ ] `src/__tests__/lib/integrations/zoom.test.ts` — 既存ファイルに Zoom スケジュール取得テストを追記 (ZOOM-01, ZOOM-02, ZOOM-03, ZOOM-04)
 - [ ] Mock fixtures for Zoom API responses (scheduled meetings list, error 3161)
 
-*Existing `src/__tests__/lib/integrations/zoom.test.ts` covers meeting creation/deletion — schedule tests extend this.*
+*既存 `zoom.test.ts` を拡張して全 Zoom テストを1ファイルに集約。*
 
 ---
 
