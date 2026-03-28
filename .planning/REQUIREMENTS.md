@@ -17,9 +17,9 @@ Requirements for v1.3 運用改善. Each maps to roadmap phases.
 ### プランタイプ別メニュー表示
 
 - [x] **MENU-01**: メニューごとに対象プランタイプを設定できる（管理画面）
-- [ ] **MENU-02**: 会員は自分のプランタイプに対応するメニューのみ予約画面に表示される
+- [x] **MENU-02**: 会員は自分のプランタイプに対応するメニューのみ予約画面に表示される
 - [x] **MENU-03**: 「お金のブロック解消プラン」を新規プランタイプとして作成できる
-- [ ] **MENU-04**: 「お金のブロック解消120分セッション」メニューはお金のブロック解消プランの会員のみに表示される
+- [x] **MENU-04**: 「お金のブロック解消120分セッション」メニューはお金のブロック解消プランの会員のみに表示される
 - [x] **MENU-05**: プランタイプ未設定のメニューは全プランに表示される（後方互換）
 
 ### ポイント溢れ通知メール
@@ -61,9 +61,9 @@ Deferred to future release.
 | ZOOM-03 | Phase 13 | Complete |
 | ZOOM-04 | Phase 13 | Complete |
 | MENU-01 | Phase 12 | Complete |
-| MENU-02 | Phase 14 | Pending |
+| MENU-02 | Phase 14 | Complete |
 | MENU-03 | Phase 12 | Complete |
-| MENU-04 | Phase 14 | Pending |
+| MENU-04 | Phase 14 | Complete |
 | MENU-05 | Phase 12 | Complete |
 | POINT-01 | Phase 15 | Pending |
 | POINT-02 | Phase 15 | Pending |
