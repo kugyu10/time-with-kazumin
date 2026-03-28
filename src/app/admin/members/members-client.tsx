@@ -21,11 +21,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import type { Row } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import { getColumns } from "./columns"
 import { MemberForm } from "@/components/admin/forms/member-form"
 import { PointAdjustForm } from "@/components/admin/forms/point-adjust-form"
 import { deactivateMember, type Member } from "@/lib/actions/admin/members"
+
+function getMemberRowClassName(row: Row<Member>): string {
+  const status = row.original.activity_status
+  if (status === 'red') return 'bg-red-50 hover:bg-red-100'
+  if (status === 'yellow') return 'bg-yellow-50 hover:bg-yellow-100'
+  return ''
+}
 
 type Plan = {
   id: number
@@ -124,7 +132,7 @@ export function MembersClient({ initialMembers, plans }: MembersClientProps) {
         </Dialog>
       </div>
 
-      <DataTable columns={columns} data={members} />
+      <DataTable columns={columns} data={members} getRowClassName={getMemberRowClassName} />
 
       {/* Point Adjustment Dialog */}
       <Dialog open={!!adjustingMember} onOpenChange={() => setAdjustingMember(null)}>
