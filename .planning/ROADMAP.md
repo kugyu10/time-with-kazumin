@@ -160,7 +160,7 @@ Plans:
 **Goal:** saga.tsのcompensateAll()の破壊的配列操作と補償失敗握りつぶしを修正し、予約失敗時のリソース残留問題を解消する (GitHub Issue #13)
 **Requirements**: BUGFIX-13
 **Depends on:** Phase 17
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 18-01-PLAN.md — compensateAll修正 + 補償失敗収集 + cancel.tsクリーンアップ失敗情報追加

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 運用改善
 status: verifying
-stopped_at: Phase 18 context gathered
-last_updated: "2026-03-28T23:51:53.994Z"
+stopped_at: Completed 18-saga-01-PLAN.md
+last_updated: "2026-03-29T00:05:19.865Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 10
-  completed_plans: 9
+  completed_phases: 6
+  total_plans: 11
+  completed_plans: 10
   percent: 0
 ---
 
@@ -61,6 +61,7 @@ Progress: [          ] 0%
 | Phase 15-point-overflow-notify P02 | 8 | 1 tasks | 1 files |
 | Phase 16-member-activity P01 | 15 | 2 tasks | 2 files |
 | Phase 16-member-activity P02 | 10 | 2 tasks | 5 files |
+| Phase 18-saga P01 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 16-01]: getFollowUpMembers()はgetMembers()を内部呼び出してフィルタ: DRY+YAGNI原則
 - [Phase 16-02]: DataTable getRowClassNameはoptional prop (TData汎用) — Member以外のテーブルへの影響なし
 - [Phase 16-02]: FollowUpListはasync Server Component — dashboard/page.tsxをasync化せずSuspenseで囲む
+- [Phase 18-saga]: 各補償関数からtry-catchを削除してcompensateAllに集約: 失敗収集を可能にするため
+- [Phase 18-saga]: CompensationFailure[]返却: BookingSagaResultまでの失敗情報伝播パターン確立
+- [Phase 18-saga]: cancel.tsのcleanupFailuresはsuccess=trueのまま戻り値に含める（非ブロッキング方針維持）
 
 ### Roadmap Evolution
 
@@ -110,7 +114,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T23:51:53.991Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-saga/18-CONTEXT.md
+Last session: 2026-03-29T00:05:19.862Z
+Stopped at: Completed 18-saga-01-PLAN.md
+Resume file: None
 Next step: `/gsd:plan-phase 12`
