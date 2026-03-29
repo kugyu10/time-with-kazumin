@@ -44,11 +44,17 @@ export interface BookingSagaContext {
   googleEventId?: string
 }
 
+export interface CompensationFailure {
+  step: string  // e.g. "create_zoom", "add_calendar"
+  error: string // エラーメッセージ
+}
+
 export interface BookingSagaResult {
   success: boolean
   booking?: BookingResponse
   error?: string
   errorCode?: string
+  compensationFailures?: CompensationFailure[]
 }
 
 // Error codes for client handling
