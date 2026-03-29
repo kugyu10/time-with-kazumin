@@ -1,5 +1,14 @@
 # Milestones
 
+## v1.3 運用改善 (Shipped: 2026-03-29)
+
+**Phases completed:** 7 phases, 11 plans, 4 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
 ## v1.2 安定化 (Shipped: 2026-03-16)
 
 **Phases:** 8-11 (4 phases, 7 plans)
