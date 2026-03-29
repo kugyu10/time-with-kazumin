@@ -60,6 +60,32 @@ export function getColumns({ onAdjustPoints, onDeactivate }: ColumnsProps): Colu
       },
     },
     {
+      accessorKey: "last_session_at",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          前回セッション
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const lastSessionAt = row.original.last_session_at
+        if (!lastSessionAt) return <span className="text-muted-foreground text-sm">未訪問</span>
+        const daysAgo = Math.floor(
+          (Date.now() - new Date(lastSessionAt).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        if (daysAgo === 0) return "今日"
+        return `${daysAgo}日前`
+      },
+      sortingFn: (rowA, rowB) => {
+        const a = rowA.original.last_session_at ?? ""
+        const b = rowB.original.last_session_at ?? ""
+        return a < b ? -1 : a > b ? 1 : 0
+      },
+    },
+    {
       accessorKey: "member_plan.status",
       header: "ステータス",
       cell: ({ row }) => {

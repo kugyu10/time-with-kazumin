@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -7,6 +8,7 @@ import {
   ListOrdered,
   CreditCard,
 } from "lucide-react"
+import { FollowUpList } from "./follow-up-list"
 
 const quickLinks = [
   {
@@ -71,6 +73,14 @@ export default function AdminDashboard() {
             </Link>
           )
         })}
+      </div>
+
+      {/* Follow-up members section */}
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold">フォローが必要な会員</h2>
+        <Suspense fallback={<div className="text-muted-foreground text-sm">読み込み中...</div>}>
+          <FollowUpList />
+        </Suspense>
       </div>
     </div>
   )

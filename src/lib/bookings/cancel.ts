@@ -22,6 +22,7 @@ export type CancelBookingResult = {
   refunded_points?: number
   error?: string
   error_code?: string
+  cleanup_failures?: string[]  // e.g. ["zoom_delete", "calendar_delete"]
 }
 
 // 型定義
@@ -165,6 +166,8 @@ export async function cancelBooking(
       console.log(`[cancelBooking] Points refunded: ${pointsToRefund}, new balance: ${newBalance}`)
     }
 
+    const cleanupFailures: string[] = []
+
     // 6. Zoom会議削除（非ブロッキング - 失敗してもキャンセルは続行）
     if (booking.zoom_meeting_id) {
       try {
@@ -176,6 +179,7 @@ export async function cancelBooking(
         console.log(`[cancelBooking] Zoom meeting deleted: ${booking.zoom_meeting_id}`)
       } catch (error) {
         console.warn("[cancelBooking] Zoom deletion failed (non-blocking):", error)
+        cleanupFailures.push("zoom_delete")
       }
     }
 
@@ -189,6 +193,7 @@ export async function cancelBooking(
         console.log(`[cancelBooking] Calendar event deleted: ${booking.google_event_id}`)
       } catch (error) {
         console.warn("[cancelBooking] Calendar deletion failed (non-blocking):", error)
+        cleanupFailures.push("calendar_delete")
       }
     }
 
@@ -249,7 +254,11 @@ export async function cancelBooking(
       }
     }
 
-    return { success: true, refunded_points: refundedPoints }
+    return {
+      success: true,
+      refunded_points: refundedPoints,
+      cleanup_failures: cleanupFailures.length > 0 ? cleanupFailures : undefined,
+    }
   } catch (error) {
     console.error("[cancelBooking] Unexpected error:", error)
     return {

@@ -1,213 +1,163 @@
 # Project Research Summary
 
-**Project:** Time with Kazumin — コーチングセッション予約システム
-**Domain:** ポイント制サブスクリプション型予約管理 + E2Eテスト環境導入（v1.2）
-**Researched:** 2026-02-22 / Updated: 2026-03-15 (E2Eテスト統合)
+**Project:** Time with Kazumin — v1.3 運用改善
+**Domain:** コーチングセッション予約管理システム（ポイント制サブスクリプション）
+**Researched:** 2026-03-27
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Time with Kazumin は Next.js 15 App Router + Supabase + Vercel で構築されたコーチングセッション予約システムであり、月次ポイント自動付与・Zoom アカウント自動振り分け・祝日対応営業時間という差別化機能を持つ。v1.2 マイルストーンでは既存システムの 4 つのバグ修正（Zoom URL 表示欠落、JST 時刻表示誤り、招待メール送信、カレンダーブロック反映）の確認と、Playwright による E2E テスト環境の導入を同時に行う。現在の規模は週 3〜5 件・ユーザー約 10 人という小規模であり、この規模に最適化されたシンプルな実装が求められる。
+v1.3は新機能の追加ではなく、既存システムの運用品質を高める改善マイルストーンである。追加する4機能（Zoomカレンダーブロック・プランタイプ別メニュー表示・ポイント溢れ通知メール・会員アクティビティ表示）はすべて、既存スタック（Next.js 15 + Supabase + Zoom S2S OAuth + Resend）の上に乗る。新規npmパッケージのインストールは不要。DBマイグレーション2件とEdge Function 1件の追加が中心となる。
 
-推奨アプローチは Playwright 1.58.2 の採用である。Cypress に対して並列実行コスト・Vercel Preview 統合パターン・Supabase 認証バイパスの確立度で明確に優位であり、Next.js 公式ドキュメント（2026-02-27 更新）でも推奨されている。認証戦略として Google OAuth の自動化は ToS 違反リスクと CI 環境での Bot 検出で実現不可能なため、Supabase REST API によるメール/パスワード認証 + storageState セッション再利用パターンを採用する。外部サービス（Zoom、Google Calendar、Resend）は `page.route()` でモックし、実 API 呼び出しを E2E 対象外とすることでクォータ消費と外部依存を回避する。
+推奨アプローチは「既存パターンの徹底踏襲」である。Zoomカレンダーブロックは `getCachedBusyTimes()` のLRUキャッシュ設計をそのままZoomにも適用する。ポイント溢れ通知はすでに稼働実績のある `monthly-point-grant` Edge Function と同一パターンで実装する。会員アクティビティは新テーブル不要で `bookings` テーブルへの集計クエリのみ。プランタイプ別メニューのみDBスキーマ変更（`meeting_menus.allowed_plan_types` カラム追加）が必要で、これがフェーズの依存関係起点になる。
 
-主要リスクは3点ある。Supabase dev 環境の接続数制限による並列テスト干渉（`workers: 1` で回避）、Vercel Preview URL の毎回変更（`patrickedqvist/wait-for-vercel-preview` で自動取得）、develop ブランチのデプロイ保護設定（現状確認の上で無効化が必要）。これらはすべて対策が確立されており、実装フェーズで確実に対処すれば高品質な CI/CD パイプラインを構築できる。既存システムの重大リスクである分散トランザクション補償処理・ポイント整合性・OAuth トークン管理は v1.0〜v1.1 でSaga パターンと Stored Procedures による設計が確定済みである。
+主要リスクは2点。(1) ZoomアカウントB（無料）のAPIスコープ制限（エラーコード3161）— 実装前に手動検証が必要。(2) pg_cronのUTC固定動作によるタイムゾーン誤設定 — cron式をJSTで書かず必ずUTC基準で計算する。どちらも既知の問題で対策が確立されており、事前確認でリスクを低減できる。
 
 ## Key Findings
 
 ### Recommended Stack
 
-既存スタック（Next.js 15 / React 19 / TypeScript 5.8 / Supabase / Vercel / Tailwind CSS v4 / shadcn/ui）は確定済みで安定している。v1.2 では E2E テストインフラとして Playwright を追加する。
+v1.3で新規追加するnpmパッケージはゼロ。既存スタック（Next.js 15 / React 19 / TypeScript 5 / Supabase / Vercel / shadcn/ui / Tailwind CSS 4）をそのまま使用する。追加するのはDBマイグレーション2件（`meeting_menus.allowed_plan_types` カラム追加、pg_cronジョブ登録）とEdge Function 1件（`point-overflow-notify`）のみ。
 
-**コアテクノロジー（確定済み）:**
-- `Next.js 15.x`: フルスタックフレームワーク — App Router 安定版、React 19 対応、Vercel 最適化
-- `Supabase (PostgreSQL 15+)`: BaaS — ポイント管理の ACID 保証に Stored Procedures が必須、RLS で宣言的アクセス制御
-- `Vercel`: ホスティング — Next.js 開発元、無料枠で MVP 十分（10 秒タイムアウト注意）
-- `Resend + React Email 5.x`: メール送信 — 月 3,000 通無料、React コンポーネントでテンプレート管理
-- `Google Calendar API v3 + Zoom API v2`: 外部連携 — サービスアカウント認証、オンデマンド同期 + 15 分キャッシュ
-
-**E2E テストスタック（v1.2 追加）:**
-- `@playwright/test@1.58.2`: E2Eテストランナー — Next.js 公式推奨、CI 並列実行無料、storageState 認証再利用対応
-- `patrickedqvist/wait-for-vercel-preview@v1.3.3`: CI 統合 — Vercel Preview URL を自動取得するシンプルな手法
-
-**採用しない技術（理由）:**
-- Cypress: 並列実行が有料（Playwright で完全代替）
-- `supawright`: 現規模では YAGNI
-- ローカル Supabase: dev プロジェクトへの直接接続方針のため不要
+**使用する既存技術:**
+- `Zoom S2S OAuth + LRU Cache`: 既存 `getZoomAccessToken()` を再利用。`GET /users/me/meetings?type=scheduled` を追加 — 新ライブラリ不要
+- `pg_cron + pg_net`: 既存 `monthly-point-grant` と同一パターン。`0 0 20 * *`（UTC）で毎月20日実行
+- `Resend + React Email`: 新規メールテンプレート1コンポーネントを追加するだけ — テンプレート追加のみ
+- `date-fns v4`: Zoom `start_time + duration` から end_time を `addMinutes()` で算出 — バージョン変更なし
+- `lru-cache v11`: Zoomスケジュール取得にも15分TTLでキャッシュ — 既存 `busyTimesCache` と同設計
 
 詳細: `.planning/research/STACK.md`
 
 ### Expected Features
 
-**テーブルステークス（E2E で P0/P1 として必須確認）:**
-- ゲスト予約ハッピーパス（スロット選択 → 確定 → Zoom URL 表示）— ここが壊れると売上ゼロ
-- 時刻 JST 表示（#2 バグ修正確認）— UTC 表示はユーザー混乱の直接原因
-- 会員ログイン → ダッシュボードリダイレクト — 認証基盤の確認
-- 未認証での保護ルートアクセス → リダイレクト — ルート保護の確認
-- 会員予約 + ポイント消費確認 — ポイント制の根幹機能
-- 予約キャンセル + ポイント返還確認 — トランザクション整合性
+**Must have（table stakes）:**
+- **プランタイプ別メニュー表示** — 「使えないメニューが見える」はUX上の欠陥。`meeting_menus.allowed_plan_types INTEGER[]` カラム追加で対応
+- **Zoomカレンダーブロック** — Zoom直接ブロックと予約システムの矛盾は運用混乱を招く。`getZoomScheduledMeetings()` を `getCachedBusyTimes()` と統合
+- **ポイント溢れ通知メール** — `max_points` 設定プランがある以上、事前通知はユーザーへの誠実な対応
+- **会員アクティビティ表示** — 管理者の感覚的把握をデータで補完。最も実装コストが低い
 
-**差別化要素（システムの核心、v1.0 確定済み）:**
-- ポイント制サブスクリプション（市場では珍しい機能）
-- Zoom アカウント使い分け（カジュアル 40 分制限 / 有料無制限の自動切り替え）
-- 祝日対応営業時間（Google 公開カレンダー連携）
-- ミーティングバッファ設定
+**Should have（competitive）:**
+- **プランタイプ別メニューの管理UI** — 管理者がメニューとプランの対応を画面上で設定できる
+- **会員アクティビティフィルタ** — 色分けバッジ + active/inactiveソート機能のセット
 
-**E2E でテストしないこと（アンチフィーチャー）:**
-- Google OAuth UI フロー（ToS 違反リスク + CI で Bot 検出で絶対に動かない）
-- 実際の Zoom/Google Calendar/Resend API 呼び出し（クォータ消費 + 外部依存）
-- 全バリデーションパターン網羅（Vitest + React Testing Library で対応）
+**Defer（v2+）:**
+- Zoom FreeBusy APIへの正式移行（`type=scheduled` 暫定取得からの脱却）
+- 会員向けポイント残高アラート（管理者向けとは別チャンネル）
+- LINE通知対応
+- プランに応じた予約上限数制限（既存ポイント制が自然な制約として機能）
 
 詳細: `.planning/research/FEATURES.md`
 
 ### Architecture Approach
 
-E2E テストは既存の Next.js App Router アーキテクチャ（5層構成）に対して、テストインフラを追加する形で統合する。CI では Vercel Preview URL を対象に実行し、ローカルでは `next dev` を自動起動するデュアルモード設計。Supabase dev プロジェクトを共用し、独立した test 用プロジェクトは作成しない（YAGNI）。
+v1.3の全機能は既存アーキテクチャ（Next.js App Router + Server Actions + Supabase + 外部API統合）の延長として実装できる。スロット空き判定フロー（Google Calendar FreeBusy → isSlotBusy()）にZoomスケジュールを並列追加するのが核心。プランタイプ別メニューは `meeting_menus` テーブルの単一カラム追加でフィルタロジックを実現し、中間テーブルの複雑さを避ける（`allowed_plan_types IS NULL` = 全プラン対象という後方互換設計）。
 
-**既存システムの主要コンポーネント（確定済み）:**
-1. `Presentation Layer` — Next.js App Router (RSC/SSR)、shadcn/ui、Route Groups で guest/member/admin 分離
-2. `Application Layer` — Route Handlers (`/api/*`)、Server Actions、Server Components
-3. `Business Logic Layer` — `lib/availability/`（空き時間計算）、`lib/booking/`（Saga オーケストレーション）、`lib/points/`
-4. `Integration Layer` — Google Calendar wrapper（15 分キャッシュ）、Zoom wrapper（A/B アカウント切り替え）、Resend wrapper
-5. `Data Layer` — PostgreSQL Stored Procedures（ACID）、RLS（JWT claim ベース）、Edge Functions（pg_cron）
-
-**E2E テスト追加コンポーネント（v1.2）:**
-- `playwright.config.ts` — deュアルモード（CI: Vercel Preview、ローカル: dev server）+ プロジェクト別セッション（guest/member/admin）
-- `e2e/global-setup.ts / global-teardown.ts` — service role でテストユーザー作成・cascade 削除
-- `e2e/auth.setup.ts` — REST API ログイン + storageState 保存
-- `e2e/fixtures.ts` — serviceRole フィクスチャ + booking cleanup
-- `.github/workflows/e2e.yml` — develop push / main PR トリガーの CI ワークフロー
-
-**確立済みパターン:**
-- Server-First（RSC デフォルト、`'use client'` は必要箇所のみ）
-- PostgreSQL Stored Procedures（`consume_points()` に `SELECT FOR UPDATE NOWAIT`）
-- Saga パターン + 補償トランザクション（Zoom/Calendar/Email の分散処理）
-- Optimistic Locking + DB UNIQUE INDEX（ダブルブッキング防止）
+**主要コンポーネントと変更点:**
+1. `src/lib/integrations/zoom.ts` — `getZoomScheduledMeetings(accountType)` 関数追加（Zoomスケジュール取得 + 15分LRUキャッシュ）
+2. `src/app/api/public/slots/route.ts` / `week/route.ts` — ZoomのBusyTime[]をGoogleのBusyTime[]とマージ
+3. `supabase/functions/point-overflow-notify/index.ts` — 新規Edge Function（monthly-point-grantパターン踏襲）
+4. `src/lib/actions/admin/members.ts` — `getMembers()` クエリに `MAX(bookings.start_time)` LEFT JOIN追加
+5. DB Migration — `meeting_menus.allowed_plan_types INTEGER[] DEFAULT NULL` + GINインデックス
 
 詳細: `.planning/research/ARCHITECTURE.md`
 
 ### Critical Pitfalls
 
-**クリティカル（v1.2 E2E 固有）:**
-
-1. **Google OAuth を Playwright で自動化しようとする** — Google の Bot 検出と ToS 違反で CI 環境では絶対に動かない。テスト専用メール/パスワードユーザーを Supabase dev に作成し、Google OAuth フロー自体は E2E 対象外にする
-
-2. **Supabase dev 環境の並列テスト干渉** — 無料枠の接続数制限により並列実行で競合が発生する。`workers: 1` でシリアル実行し、`afterEach` で booking データを service role でクリーンアップする
-
-3. **Vercel Preview のデプロイ保護** — develop ブランチに Vercel Authentication が有効だと Playwright がアクセスできない。Protection Bypass for Automation は有料（$150/月）のため、develop 環境のデプロイ保護を無効化する
-
-4. **service role での誤データ削除** — service role は RLS をバイパスするため teardown で他ユーザーデータを消す危険がある。`user_id` フィルタリングを必須とし、DB リセット全体（`supabase db reset`）は絶対に行わない
-
-**クリティカル（既存システム、v1.0〜v1.1 確定済み）:**
-
-5. **分散トランザクション補償処理欠如** — 予約作成 8 ステップが途中失敗すると不整合状態になる。Saga パターン + 冪等性キーで設計済み。Phase 2 実装前に設計完了必須
-
-6. **ポイントトランザクション整合性** — 同時予約で残高超過消費が発生する。`consume_points()` に `SELECT FOR UPDATE NOWAIT` + 楽観的ロックで対応
-
-7. **タイムゾーン不整合（#2 バグの根本原因）** — DB は全て `timestamptz`（UTC）、表示時のみ `date-fns-tz` で JST 変換
-
-8. **OAuth トークン期限切れ** — Zoom/Google Calendar API が突然 401 エラーでサービス停止する。リフレッシュトークン自動更新 + 5 分前事前チェックで対応
+1. **ZoomアカウントB（無料）のAPI制限エラー3161** — 実装前に `GET /users/me/meetings?type=scheduled` をアカウントBでcurl検証。3161エラーのフォールバック（空配列返却 + ログ記録）を必ず実装する
+2. **Zoom APIキャッシュ未実装によるレート制限** — `zoom.ts` に `getCachedZoomSchedules()` を追加してTTL 15分以上のLRUキャッシュを設定。キャッシュなしでの実装は避ける
+3. **RLSポリシー競合（複数permissiveポリシーのOR結合）** — `meeting_menus` の既存ポリシー「Anyone can view active menus」を DROP して置き換えるか、アプリ層（Server Actions）でフィルタを実装する
+4. **pg_cronのタイムゾーン誤設定** — pg_cronはUTC固定。JST 20日09:00実行 = `0 0 20 * *`（UTC）。cron式をJSTで書かない
+5. **pg_cronジョブ登録漏れ** — 新Edge Functionデプロイとpg_cronジョブ登録を同一マイグレーションファイルに含め、`supabase db push` 1コマンドで完結させる
 
 詳細: `.planning/research/PITFALLS.md`
 
 ## Implications for Roadmap
 
-v1.2 マイルストーンの E2E テスト環境導入は、アーキテクチャ研究で明確なビルド順序が定義されている。依存関係に基づいて以下の 5 フェーズ構成を推奨する。
+研究から導かれる推奨フェーズ構造:
 
-### Phase 1: E2E 基盤整備
-**Rationale:** 後続フェーズ全ての前提となるインフラ設定。Playwright インストールと設定ファイルの整備なしには何も始められない
-**Delivers:** `playwright.config.ts`（デュアルモード + プロジェクト別認証設定）、`e2e/.auth/` の `.gitignore` 追記、`package.json` に `test:e2e` / `test:e2e:ui` / `test:all` スクリプト追加
-**Avoids:** `.auth/` ファイルの誤コミット（セッション情報漏洩防止）
-**Research flag:** 標準パターン確立済み — 追加調査不要
+### Phase 1: DBスキーマ変更（基盤）
+**Rationale:** `meeting_menus.allowed_plan_types` カラム追加はプランタイプ別メニュー（Phase 3）の前提条件。最初に着手してアンブロックする。
+**Delivers:** `meeting_menus.allowed_plan_types INTEGER[] DEFAULT NULL` マイグレーション適用済み
+**Addresses:** プランタイプ別メニュー表示（#10）の依存解消
+**Avoids:** Phase 3でスキーマ変更を後付けする際の手戻り
 
-### Phase 2: テストデータ管理基盤
-**Rationale:** 認証セットアップ（Phase 3）にはテストユーザーの事前作成が必要。global-setup / teardown と fixtures は Phase 1 完了後すぐに着手可能
-**Delivers:** `e2e/global-setup.ts`（テストユーザー + member_plan 作成）、`e2e/global-teardown.ts`（cascade 削除）、`e2e/fixtures.ts`（serviceRole + booking cleanup フィクスチャ）
-**Avoids:** teardown での誤データ削除（`user_id` フィルタリング必須）、DB リセット全体実行（マスターデータ消滅リスク）
-**Research flag:** 標準パターン確立済み — 追加調査不要
+### Phase 2: Zoomカレンダーブロック（独立・高リスク先行）
+**Rationale:** 他機能に依存しないが、ZoomアカウントBのAPI制限という未知リスクを最初に潰す。問題が発覚した場合の設計変更を早めに行う。
+**Delivers:** Zoomスケジュール済み会議をBusyTime[]として空き枠計算に統合
+**Uses:** 既存 `getZoomAccessToken()` + 新規 `getZoomScheduledMeetings()` + 15分LRUキャッシュ
+**Avoids:** Pitfall 1（アカウントB制限3161）、Pitfall 2（レート制限）
 
-### Phase 3: 認証セットアップ
-**Rationale:** 会員・管理者テスト（Phase 4）には認証済みセッションが必要。`auth.setup.ts` は Supabase REST API ログイン + storageState 保存の確立パターン
-**Delivers:** `e2e/auth.setup.ts`（会員・管理者セッション取得）、`e2e/.auth/member.json` / `admin.json`
-**Uses:** Supabase `signInWithPassword()` REST API、Playwright `storageState`、`page.evaluate()` で localStorage にセッション注入
-**Avoids:** Google OAuth 自動化（絶対に試みない）
-**Research flag:** `/login` ページにメール/パスワードフォームが存在するか実装前に確認必要。既存のミドルウェアが `@supabase/ssr` の Cookie ベースセッションを使用しているため、UI ログイン後の storageState 取得が最も確実な場合がある
+### Phase 3: プランタイプ別メニュー表示（Phase 1完了後）
+**Rationale:** Phase 1のDBマイグレーション完了が前提。管理UI変更と予約フィルタ変更を並行実装できる。
+**Delivers:** 管理者がメニューごとに対象プランを設定 + 会員予約画面でプランフィルタが効く
+**Implements:** `menus.ts` Server Action拡張 + 管理画面プラン選択UI + 予約フローフィルタ
+**Avoids:** Pitfall 3（RLSポリシー競合）— アプリ層フィルタ推奨
 
-### Phase 4: テストシナリオ実装
-**Rationale:** 基盤（Phase 1-3）完了後に着手。ゲストテストは Phase 1 完了直後から認証不要で先行着手可能。優先度 P0 → P1 → P2 の順で実装し、最初の green テストを早期に得る
-**Delivers:** `e2e/guest/booking-flow.spec.ts`（P0: ゲスト予約 + JST 表示確認）、`e2e/member/booking-flow.spec.ts`（P1: ポイント消費）、`e2e/member/cancel-flow.spec.ts`（P1: ポイント返還 + Zoom 削除 API 確認）、`e2e/admin/booking-management.spec.ts`（P2: 管理者スモーク + 招待メール確認）
-**Implements:** `page.route()` による外部 API モック（Zoom/Calendar/Resend）
-**Avoids:** 実 Zoom API 呼び出し（クォータ消費）、全バリデーション網羅（Vitest で対応）
-**Research flag:** 追加調査不要（Playwright 公式ドキュメントに完全なサンプルあり）
+### Phase 4: ポイント溢れ通知メール（独立）
+**Rationale:** 他機能に依存しない。`monthly-point-grant` パターンをそのまま踏襲するため設計判断が少なく、pg_cronのUTCタイムゾーン注意が主な実装ポイント。
+**Delivers:** 毎月20日（JST 09:00）に溢れ予定会員へ自動メール通知
+**Uses:** 新規Edge Function `point-overflow-notify` + pg_cron + Resend + 新規React Emailテンプレート
+**Avoids:** Pitfall 4（pg_cronタイムゾーン誤設定）、Pitfall 5（pg_cronジョブ登録漏れ）
 
-### Phase 5: CI 統合
-**Rationale:** テストがローカルで全て green になってから CI に乗せる。不安定なテストを CI に載せると開発の妨げになる
-**Delivers:** `.github/workflows/e2e.yml`（develop push / main PR トリガー）、GitHub Secrets 設定（`SUPABASE_DEV_URL`、`SUPABASE_DEV_ANON_KEY`、`SUPABASE_DEV_SERVICE_ROLE_KEY`）
-**Avoids:** デプロイ保護による CI アクセス不可（Vercel dashboard で develop ブランチの Protection 設定を事前確認・無効化）
-**Research flag:** Vercel dashboard で develop ブランチのデプロイ保護設定状況を確認する必要がある
+### Phase 5: 会員アクティビティ表示（独立・最低リスク）
+**Rationale:** スキーマ変更なし、外部API追加なし。最もリスクが低く独立した機能。SQL集計クエリのみなので確実に完了できる。
+**Delivers:** 管理者会員一覧に30日/60日未訪問バッジ + 管理ダッシュボードに要フォロー会員リスト
+**Implements:** `getMembers()` LEFT JOIN拡張 + shadcn/ui Badge + dashboardセクション追加
+**Avoids:** Pitfall 6（N+1クエリ）— `MAX(start_time)` GROUP BY集計を1クエリで完結
 
 ### Phase Ordering Rationale
 
-- **依存関係の厳守:** global-setup なしに auth.setup は動かない。auth.setup なしに member/admin テストは動かない。この順序は逆転不可
-- **ゲストテストの前倒し:** ゲスト予約フローは認証不要のため Phase 1 完了後すぐに着手できる。最初の green テストを早期に得ることでモチベーション維持と基盤検証を兼ねる
-- **CI は最後:** 不安定なテストを CI に載せると「CI が赤い」状態が続く。Phase 4 でローカル green を確認してから CI 統合する
-- **Pitfalls の先行対処:** `workers: 1`（Supabase 接続制限）と `user_id` フィルタ（service role 誤削除）は Phase 2 で実装し、後続フェーズに引き継がない
+- **Phase 1が先行必須:** プランタイプ別メニュー（Phase 3）はDBマイグレーション完了待ち。早めに適用してアンブロックする
+- **Phase 2を前倒し:** ZoomアカウントBのAPI制限は実機テスト前の不確定リスク。設計変更が発生した場合の影響を最小化するために前倒し
+- **Phase 3はPhase 1後:** 依存関係が明確なため、この順序が必然
+- **Phase 4, 5はPhase 2, 3と並行可能:** 互いに独立しているため並列実装も可能。単一開発者であればPhase 2→3→4→5の順次実装が現実的
 
 ### Research Flags
 
 追加調査が必要なフェーズ:
-- **Phase 3:** `/login` ページにメール/パスワードフォームが存在するか確認が必要。`middleware.ts` が `@supabase/ssr` Cookie ベースセッションを使用している場合、UI ログイン後の storageState 取得が最も確実。フォームが存在しない場合は Supabase REST API アプローチのみ
-- **Phase 5:** Vercel dashboard で develop ブランチの Deployment Protection 設定を事前確認する。有効な場合は無効化が必要
+- **Phase 2（Zoomカレンダーブロック）:** ZoomアカウントBで `GET /users/me/meetings?type=scheduled` をcurl実行してAPIスコープ制限を確認。Zoom OAuthスコープ名 `meeting:read:list_meetings:admin` の正確な名称をDeveloper Consoleで確認（現在信頼度LOW）
 
 標準パターンで追加調査不要なフェーズ:
-- **Phase 1:** Playwright 公式ドキュメント準拠、設定パターン確立済み
-- **Phase 2:** Supabase service role での CRUD は標準操作
-- **Phase 4:** `page.route()` モックは Playwright 公式に完全なサンプルあり
+- **Phase 1:** 単純なDBマイグレーション
+- **Phase 4:** `monthly-point-grant` の完全パターン再利用
+- **Phase 5:** 標準的なSQL集計クエリ + shadcn/ui Badge
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Playwright 1.58.2 は npm registry で確認済み（2026-01-30 リリース）。Next.js 公式ドキュメント（2026-02-27 更新）で推奨。既存スタックは v1.0 から確定 |
-| Features（テストシナリオ） | HIGH | Playwright 公式 + Supabase 実証パターン（mokkapps.de）で確認。Google OAuth 回避の必然性はコミュニティで合意済み |
-| Architecture | HIGH | Vercel プレビュー統合・Supabase auth バイパスは公式 + 複数実証ソースで確認。既存アーキテクチャは v1.0 から確定済み |
-| Pitfalls | MEDIUM-HIGH | E2E 固有の pitfalls は公式 + 複数コミュニティソースで確認。既存 pitfalls は v1.0 調査から引き継ぎ検証済み |
+| Stack | HIGH | 既存スタックの延長のみ。新規追加ゼロ。稼働実績のあるパターンを再利用 |
+| Features | HIGH | 既存コードベースを直接調査済み。各機能の実装箇所が特定されている |
+| Architecture | HIGH | 全コンポーネントの変更対象ファイルが具体的に特定されている |
+| Pitfalls | MEDIUM-HIGH | RLS/pg_cron/N+1は公式ドキュメント確認済み。ZoomアカウントBは実機未検証 |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **メール/パスワードログインフォームの存在確認:** `src/app/(auth)/login/` に email + password フォームがあるか実装前に確認。`middleware.ts` が supabase SSR Cookie ベースなら UI ログイン後の storageState 取得が最も確実。フォームがない場合は REST API アプローチ一択
-- **Vercel develop 環境のデプロイ保護状態:** Vercel dashboard で確認が必要。有効な場合は Phase 5 で無効化する（無料の Protection Bypass は存在しない）
-- **テストユーザーのロール付与方法:** Supabase `app_metadata` に `role: 'admin'` を付与する手順（または admin ユーザーを別途作成するか）を Phase 2 で確定する
+- **ZoomアカウントBのAPIスコープ制限（Pitfall 1）:** 実装前にcurlで手動検証必須。3161エラーが発生した場合の代替案（DBのbookingsテーブルからのbusy時間参照）を検討する
+- **Zoom OAuthスコープ名の正確性:** `meeting:read:list_meetings:admin` はコミュニティ記事ベース（信頼度LOW）。Phase 2実装開始時にDeveloper Consoleで確認する
+- **`meeting_menus` 既存RLSポリシーの内容確認:** アプリ層フィルタを採用する場合はRLS変更不要だが、既存ポリシーとの競合を事前に確認する
 
 ## Sources
 
-### Primary (HIGH confidence)
-- [Next.js App Router Testing Guide（公式）](https://nextjs.org/docs/app/guides/testing) — 2026-02-27 更新
-- [Next.js Playwright Setup（公式）](https://nextjs.org/docs/app/guides/testing/playwright) — 2026-02-27 更新
-- [Playwright Release Notes v1.58](https://playwright.dev/docs/release-notes) — バージョン確認
-- [Playwright Authentication（公式）](https://playwright.dev/docs/auth) — storageState パターン
-- [Playwright Mock APIs（公式）](https://playwright.dev/docs/mock) — `page.route()` によるネットワークモック
-- [Vercel E2E Testing with Preview Deployments](https://vercel.com/kb/guide/how-can-i-run-end-to-end-tests-after-my-vercel-preview-deployment) — 公式ガイド
-- [Resend E2E Testing with Playwright](https://resend.com/docs/knowledge-base/end-to-end-testing-with-playwright) — `delivered@resend.dev` 推奨
-- [Supabase 公式ドキュメント（Edge Functions、RLS）](https://supabase.com/docs) — 既存スタック確認
-- [Next.js 15 公式ブログ](https://nextjs.org/blog/next-15) — コアスタック確認
+### Primary（HIGH confidence）
+- 既存コードベース直接調査 — `zoom.ts`, `google-calendar.ts`, `monthly-point-grant/index.ts`, `members.ts`, `slots/route.ts`, RLSマイグレーション, `automation_tasks.sql`
+- [Supabase Schedule Functions 公式ドキュメント](https://supabase.com/docs/guides/functions/schedule-functions) — pg_cron + pg_net 統合パターン
+- [Supabase pg_cron 公式ドキュメント](https://supabase.com/docs/guides/database/extensions/pg_cron) — cron構文確認
+- [Supabase RLS Multiple Permissive Policies](https://supabase.com/docs/guides/database/database-advisors?lint=0006_multiple_permissive_policies) — ポリシー競合挙動の確認
 
-### Secondary (MEDIUM confidence)
-- [Login at Supabase via REST API in Playwright](https://mokkapps.de/blog/login-at-supabase-via-rest-api-in-playwright-e2e-test) — Supabase + Playwright 実証パターン
-- [Integrating Playwright with GitHub Workflow and Vercel](https://www.thisdot.co/blog/integrating-playwright-tests-into-your-github-workflow-with-vercel) — CI 統合パターン
-- [Playwright vs Cypress 2026 Guide for Lean Teams](https://www.getautonoma.com/blog/playwright-vs-cypress) — Playwright 採用根拠
-- [Why Playwright Seems to Be Winning Over Cypress](https://www.d4b.dev/blog/2026-02-17-why-playwright-seems-to-be-winning-over-cypress-for-end-to-end-testing)
-- [End-to-End Testing Auth Flows with Playwright and Next.js](https://testdouble.com/insights/how-to-test-auth-flows-with-playwright-and-next-js) — OAuth 代替戦略
-- [Azure Architecture Center - Saga Pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/saga) — 既存アーキテクチャ参照
-- [Stripe API - Idempotency Keys](https://docs.stripe.com/api/idempotent_requests) — 冪等性キー実装参照
+### Secondary（MEDIUM confidence）
+- [Zoom API 公式参考 (zoom.github.io)](https://zoom.github.io/api/) — `GET /users/{userId}/meetings` エンドポイント構造
+- [Zoom Developer Forum](https://devforum.zoom.us/) — エンドポイント挙動、日付範囲フィルタ非対応の確認
+- [Zoom Community - Error 3161](https://community.zoom.com/t5/Zoom-Meetings/API-Error-code-3161-on-GET-users-userId-meetings-v2-zoom/td-p/238510) — アカウントB制限エラーの実例
+- [Zoom API Rate Limits 公式](https://developers.zoom.us/docs/api/rate-limits/) — レート制限仕様
+- [pg_cron Timezone Issue（GitHub #16）](https://github.com/citusdata/pg_cron/issues/16) — UTC固定動作の確認
 
-### Tertiary (LOW confidence — needs validation)
-- E2E テストシナリオの優先度区分（P0/P1/P2）: コミュニティベストプラクティスから推定。プロジェクト固有の調整が必要な場合がある
-- Supabase RLS パフォーマンス at 1,000+ rows: 小規模データでの動作は確認済み、大規模シミュレーションは未実施
+### Tertiary（LOW confidence — needs validation）
+- コミュニティ記事複数件 — Zoom OAuthスコープ名 `meeting:read:list_meetings:admin`（Developer Consoleでの実機確認が必要）
 
 ---
-*Research completed: 2026-02-22 / E2E test integration updated: 2026-03-15*
+*Research completed: 2026-03-27*
 *Ready for roadmap: yes*
-*対象マイルストーン: v1.2 安定化 — Playwright E2Eテスト環境導入*
+*対象マイルストーン: v1.3 運用改善*

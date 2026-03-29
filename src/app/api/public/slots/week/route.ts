@@ -9,6 +9,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
+import { getCachedZoomBusyTimes } from "@/lib/integrations/zoom"
 import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
 import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
@@ -162,6 +163,21 @@ export async function GET(request: Request) {
     } catch (error) {
       console.warn("[GET /api/public/slots/week] Failed to get busy times:", error)
     }
+
+    // Zoomビジー時間の取得とマージ（Promise.allSettled 並列 per D-02）
+    const [zoomAResult, zoomBResult] = await Promise.allSettled([
+      getCachedZoomBusyTimes("A", busyTimeStart, busyTimeEnd),
+      getCachedZoomBusyTimes("B", busyTimeStart, busyTimeEnd),
+    ])
+
+    if (zoomAResult.status === "fulfilled") {
+      busyTimes = [...busyTimes, ...zoomAResult.value]
+    }
+    if (zoomBResult.status === "fulfilled") {
+      busyTimes = [...busyTimes, ...zoomBResult.value]
+    }
+
+    console.log(`[GET /api/public/slots/week] Total busy times after Zoom merge: ${busyTimes.length}`)
 
     // 設定取得（パラメータ指定がなければDB設定を使用）
     const bookingMinHoursAhead = customMinHoursAhead ?? await getBookingMinHoursAhead()

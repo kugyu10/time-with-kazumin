@@ -13,9 +13,10 @@ import {
   type BookingRequest,
   type BookingSagaContext,
   type BookingSagaResult,
+  type CompensationFailure,
   BookingErrorCodes,
 } from "./types"
-import { createZoomMeeting, deleteZoomMeeting } from "../integrations/zoom"
+import { createZoomMeeting, deleteZoomMeeting, getZoomScheduledMeetings } from "../integrations/zoom"
 import { addCalendarEvent, deleteCalendarEvent } from "../integrations/google-calendar"
 import { sendBookingConfirmationEmail } from "../integrations/email"
 import { generateCancelToken } from "../tokens/cancel-token"
@@ -117,6 +118,18 @@ export async function createBookingSaga(
     }
     completedSteps.push("check_slot")
 
+    // Step 2.5: Check Zoom schedule conflicts (real-time, cache bypass per D-05, D-07)
+    console.log("[Saga] Step 2.5: Checking Zoom schedule conflicts")
+    const zoomConflict = await checkZoomConflict(context.startTime, context.endTime)
+    if (zoomConflict) {
+      return {
+        success: false,
+        error: "この時間帯はZoomの予定と重複しています",
+        errorCode: BookingErrorCodes.SLOT_UNAVAILABLE,
+      }
+    }
+    // Note: No completedSteps.push needed - this step is read-only, no compensation required
+
     // Step 3: Consume points with retry for lock conflicts
     console.log("[Saga] Step 3: Consuming points")
     const pointsResult = await consumePointsWithRetry(
@@ -172,11 +185,14 @@ export async function createBookingSaga(
     } catch (error) {
       console.error("[Saga] Zoom meeting creation failed:", error)
       // Compensate: cancel booking and refund points
-      await compensateAll(supabase, context, completedSteps)
+      const zoomFailures = await compensateAll(supabase, context, completedSteps)
       return {
         success: false,
-        error: "Zoom会議の作成に失敗しました",
+        error: zoomFailures.length > 0
+          ? "Zoom会議の作成に失敗しました。一部のリソースのクリーンアップに失敗しました。管理者にお問い合わせください。"
+          : "Zoom会議の作成に失敗しました",
         errorCode: BookingErrorCodes.INTERNAL_ERROR,
+        compensationFailures: zoomFailures.length > 0 ? zoomFailures : undefined,
       }
     }
 
@@ -204,11 +220,14 @@ export async function createBookingSaga(
     } catch (error) {
       console.error("[Saga] Calendar event creation failed:", error)
       // Compensate: delete Zoom, cancel booking, refund points
-      await compensateAll(supabase, context, completedSteps)
+      const calendarFailures = await compensateAll(supabase, context, completedSteps)
       return {
         success: false,
-        error: "カレンダー登録に失敗しました",
+        error: calendarFailures.length > 0
+          ? "カレンダー登録に失敗しました。一部のリソースのクリーンアップに失敗しました。管理者にお問い合わせください。"
+          : "カレンダー登録に失敗しました",
         errorCode: BookingErrorCodes.INTERNAL_ERROR,
+        compensationFailures: calendarFailures.length > 0 ? calendarFailures : undefined,
       }
     }
 
@@ -217,11 +236,14 @@ export async function createBookingSaga(
     const confirmResult = await confirmBooking(supabase, context)
     if (!confirmResult.success) {
       // Compensate all
-      await compensateAll(supabase, context, completedSteps)
+      const confirmFailures = await compensateAll(supabase, context, completedSteps)
       return {
         success: false,
-        error: "予約の確定に失敗しました",
+        error: confirmFailures.length > 0
+          ? "予約の確定に失敗しました。一部のリソースのクリーンアップに失敗しました。管理者にお問い合わせください。"
+          : "予約の確定に失敗しました",
         errorCode: BookingErrorCodes.INTERNAL_ERROR,
+        compensationFailures: confirmFailures.length > 0 ? confirmFailures : undefined,
       }
     }
     completedSteps.push("confirm_booking")
@@ -273,11 +295,14 @@ export async function createBookingSaga(
   } catch (error) {
     console.error("[Saga] Unexpected error:", error)
     // Compensate all completed steps
-    await compensateAll(supabase, context, completedSteps)
+    const unexpectedFailures = await compensateAll(supabase, context, completedSteps)
     return {
       success: false,
-      error: "予約処理中にエラーが発生しました",
+      error: unexpectedFailures.length > 0
+        ? "予約処理中にエラーが発生しました。一部のリソースのクリーンアップに失敗しました。管理者にお問い合わせください。"
+        : "予約処理中にエラーが発生しました",
       errorCode: BookingErrorCodes.INTERNAL_ERROR,
+      compensationFailures: unexpectedFailures.length > 0 ? unexpectedFailures : undefined,
     }
   }
 }
@@ -482,6 +507,7 @@ async function getProfileData(
 
 /**
  * Compensation: Refund points
+ * エラーは呼び出し元（compensateAll）に伝播させる
  */
 async function compensatePointsRefund(
   supabase: SupabaseClient<Database>,
@@ -490,23 +516,19 @@ async function compensatePointsRefund(
   if (!context.pointsConsumed) return
 
   console.log("[Saga] Compensating: Refunding points")
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.rpc as any)("refund_points", {
-      p_member_plan_id: context.memberPlanId,
-      p_points: context.pointsRequired,
-      p_reference_id: context.bookingId || null,
-      p_notes: "予約作成失敗による自動返還",
-    })
-    context.pointsConsumed = false
-  } catch (error) {
-    console.error("[Saga] Points refund failed:", error)
-    // Log for manual intervention
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.rpc as any)("refund_points", {
+    p_member_plan_id: context.memberPlanId,
+    p_points: context.pointsRequired,
+    p_reference_id: context.bookingId || null,
+    p_notes: "予約作成失敗による自動返還",
+  })
+  context.pointsConsumed = false
 }
 
 /**
  * Compensation: Cancel booking
+ * エラーは呼び出し元（compensateAll）に伝播させる
  */
 async function compensateBookingCancel(
   supabase: SupabaseClient<Database>,
@@ -515,80 +537,101 @@ async function compensateBookingCancel(
   if (!context.bookingId) return
 
   console.log("[Saga] Compensating: Canceling booking")
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
-      .from("bookings")
-      .update({ status: "canceled" })
-      .eq("id", context.bookingId)
-  } catch (error) {
-    console.error("[Saga] Booking cancellation failed:", error)
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from("bookings")
+    .update({ status: "canceled" })
+    .eq("id", context.bookingId)
 }
 
 /**
  * Compensation: Delete Zoom meeting (with retry)
+ * エラーは呼び出し元（compensateAll）に伝播させる
  */
 async function compensateZoomDelete(context: BookingSagaContext): Promise<void> {
   if (!context.zoomMeetingId) return
 
   console.log("[Saga] Compensating: Deleting Zoom meeting")
-  try {
-    await retryWithExponentialBackoff(
-      () => deleteZoomMeeting(context.zoomMeetingId!, context.zoomAccountType),
-      { maxRetries: 2 }
-    )
-  } catch (error) {
-    console.error("[Saga] Zoom deletion failed:", error)
-  }
+  await retryWithExponentialBackoff(
+    () => deleteZoomMeeting(context.zoomMeetingId!, context.zoomAccountType),
+    { maxRetries: 2 }
+  )
 }
 
 /**
  * Compensation: Delete Calendar event (with retry)
+ * エラーは呼び出し元（compensateAll）に伝播させる
  */
 async function compensateCalendarDelete(context: BookingSagaContext): Promise<void> {
   if (!context.googleEventId) return
 
   console.log("[Saga] Compensating: Deleting calendar event")
-  try {
-    await retryWithExponentialBackoff(
-      () => deleteCalendarEvent(context.googleEventId!),
-      { maxRetries: 2 }
-    )
-  } catch (error) {
-    console.error("[Saga] Calendar deletion failed:", error)
-  }
+  await retryWithExponentialBackoff(
+    () => deleteCalendarEvent(context.googleEventId!),
+    { maxRetries: 2 }
+  )
 }
 
 /**
  * Execute all necessary compensations in reverse order
+ * Returns array of failures (non-empty if any compensation step failed)
  */
 async function compensateAll(
   supabase: SupabaseClient<Database>,
   context: BookingSagaContext,
   completedSteps: string[]
-): Promise<void> {
+): Promise<CompensationFailure[]> {
   console.log("[Saga] Running compensation for steps:", completedSteps)
 
-  // Reverse order compensation
-  for (const step of completedSteps.reverse()) {
+  const failures: CompensationFailure[] = []
+
+  // [...completedSteps].reverse() で元の配列を破壊しない
+  for (const step of [...completedSteps].reverse()) {
     switch (step) {
       case "add_calendar":
-        await compensateCalendarDelete(context)
+        try {
+          await compensateCalendarDelete(context)
+        } catch (error) {
+          console.error("[Saga] Compensation failed for add_calendar:", error)
+          failures.push({ step: "add_calendar", error: String(error) })
+        }
         break
       case "create_zoom":
-        await compensateZoomDelete(context)
+        try {
+          await compensateZoomDelete(context)
+        } catch (error) {
+          console.error("[Saga] Compensation failed for create_zoom:", error)
+          failures.push({ step: "create_zoom", error: String(error) })
+        }
         break
       case "create_booking":
-        await compensateBookingCancel(supabase, context)
+        try {
+          await compensateBookingCancel(supabase, context)
+        } catch (error) {
+          console.error("[Saga] Compensation failed for create_booking:", error)
+          failures.push({ step: "create_booking", error: String(error) })
+        }
         break
       case "consume_points":
-        await compensatePointsRefund(supabase, context)
+        try {
+          await compensatePointsRefund(supabase, context)
+        } catch (error) {
+          console.error("[Saga] Compensation failed for consume_points:", error)
+          failures.push({ step: "consume_points", error: String(error) })
+        }
         break
       // check_slot and validate_menu don't need compensation
     }
   }
+
+  return failures
 }
+
+/**
+ * テスト用エクスポート（内部関数をテストから呼び出せるようにする）
+ * @internal
+ */
+export { compensateAll as _compensateAllForTest }
 
 /**
  * Get zoom_account setting from menu
@@ -605,4 +648,31 @@ async function getMenuZoomAccount(
     .single()
 
   return (data?.zoom_account as "A" | "B") || "A"
+}
+
+/**
+ * Check Zoom schedule conflicts (real-time, cache bypass per D-07)
+ * Returns true if conflict exists
+ */
+async function checkZoomConflict(
+  startTime: string,
+  endTime: string
+): Promise<boolean> {
+  const [zoomAResult, zoomBResult] = await Promise.allSettled([
+    getZoomScheduledMeetings("A", startTime, endTime),
+    getZoomScheduledMeetings("B", startTime, endTime),
+  ])
+
+  const allBusyTimes: { start: string; end: string }[] = []
+  if (zoomAResult.status === "fulfilled") allBusyTimes.push(...zoomAResult.value)
+  if (zoomBResult.status === "fulfilled") allBusyTimes.push(...zoomBResult.value)
+
+  const start = new Date(startTime).getTime()
+  const end = new Date(endTime).getTime()
+
+  return allBusyTimes.some((busy) => {
+    const busyStart = new Date(busy.start).getTime()
+    const busyEnd = new Date(busy.end).getTime()
+    return start < busyEnd && end > busyStart
+  })
 }

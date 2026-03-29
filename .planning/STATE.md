@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: 安定化
-status: planning
-stopped_at: Completed 11-ci-integration-01-PLAN.md
-last_updated: "2026-03-16T08:14:29.451Z"
-last_activity: 2026-03-15 — Roadmap created for v1.2
+milestone: v1.3
+milestone_name: 運用改善
+status: verifying
+stopped_at: Completed 18-saga-01-PLAN.md
+last_updated: "2026-03-29T01:47:28.575Z"
+last_activity: 2026-03-28
 progress:
-  total_phases: 11
-  completed_phases: 11
-  total_plans: 23
-  completed_plans: 23
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 11
+  completed_plans: 11
   percent: 0
 ---
 
@@ -18,56 +18,50 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-15)
+See: .planning/PROJECT.md (updated 2026-03-27)
 
-**Core value:** 気軽にかずみんに会いに行ける予約体験 — 堅苦しいビジネスミーティングの予約ではなく、「かずみん、時間空いてる?」と友だちに声をかける感覚でセッションを予約できること。
-**Current focus:** v1.2 安定化 — バグ修正とE2Eテスト導入
+**Core value:** 気軽にかずみんに会いに行ける予約体験
+**Current focus:** Phase 13 — zoom
 
 ## Current Position
 
-Milestone: v1.2 安定化
-Phase: Phase 8（バグ修正）— Not started
-Status: Roadmap defined, ready for planning
-Last activity: 2026-03-15 — Roadmap created for v1.2
+Milestone: v1.3 運用改善
+Phase: 14
+Plan: Not started
+Status: Phase complete — ready for verification
+Last activity: 2026-03-28
 
 Progress: [          ] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16 (v1.0〜v1.1)
+
+- Total plans completed: 23 (v1.0〜v1.2)
 - Average duration: ~7 min
-- Total execution time: ~117 min
+- Total execution time: ~161 min
 
-**By Phase (historical):**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| Phase 1 | 2/2 | ~30min | ~15min |
-| Phase 2 | 3/3 | ~20min | ~7min |
-| Phase 3 | 2/2 | ~10min | ~5min |
-| Phase 4 | 3/3 | ~22min | ~7min |
-| Phase 5 | 3/3 | ~22min | ~7min |
-| Phase 6 | 2/2 | ~11min | ~5.5min |
-| Phase 7 | 1/1 | ~2min | ~2min |
-
-**v1.2 Phases (not started):**
+**v1.3 Phases (not started):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 8 | 0/2 | - | - |
-| Phase 9 | 0/2 | - | - |
-| Phase 10 | 0/2 | - | - |
-| Phase 11 | 0/1 | - | - |
+| Phase 12 | 0/TBD | - | - |
+| Phase 13 | 0/TBD | - | - |
+| Phase 14 | 0/TBD | - | - |
+| Phase 15 | 0/TBD | - | - |
+| Phase 16 | 0/TBD | - | - |
 
 *Updated after each plan completion*
-| Phase 08-bug-fixes P01 | 3 | 3 tasks | 3 files |
-| Phase 08-bug-fixes P02 | 40 | 4 tasks | 9 files |
-| Phase 09-playwright-foundation P01 | 4 | 2 tasks | 7 files |
-| Phase 09-playwright-foundation P02 | checkpoint | 3 tasks | 4 files |
-| Phase 10-test-scenarios P01 | 5 | 2 tasks | 2 files |
-| Phase 10-test-scenarios P02 | 2 | 2 tasks | 2 files |
-| Phase 11-ci-integration P01 | 1 | 1 tasks | 1 files |
+| Phase 12-db P01 | 13 | 2 tasks | 3 files |
+| Phase 13-zoom P01 | 15 | 1 tasks | 2 files |
+| Phase 13-zoom P02 | 8 | 2 tasks | 3 files |
+| Phase 14-plan-type-menu P01 | 10 | 2 tasks | 5 files |
+| Phase 14-plan-type-menu P02 | 12 | 2 tasks | 3 files |
+| Phase 15-point-overflow-notify P01 | 10 | 2 tasks | 4 files |
+| Phase 15-point-overflow-notify P02 | 8 | 1 tasks | 1 files |
+| Phase 16-member-activity P01 | 15 | 2 tasks | 2 files |
+| Phase 16-member-activity P02 | 10 | 2 tasks | 5 files |
+| Phase 18-saga P01 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -76,52 +70,37 @@ Progress: [          ] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Supabase選択: PostgreSQLトランザクション整合性でポイント管理を担保、Auth+Edge Functions統合
-- ポイント残高をmember_plansに直接保持: 残高取得を1クエリで完結(KISS原則)
-- Next.js 15.3.3を使用: Next.js 16のTurbopackは日本語パス名でバグ発生
-- 招待制チェック: profilesテーブル存在確認で未招待ユーザーをブロック
-- 遅延初期化パターン: Supabaseクライアントをビルド時エラー回避のため関数呼び出し時に初期化
-- LRUキャッシュでレート制限: IP単独5回/h、IP+email複合3回/hの制限
-- jose for JWT: ESM-native、Edge-compatible、7日間のキャンセルトークン有効期限
-- pgp_sym_encrypt for OAuth tokens: PostgreSQLネイティブ暗号化でAES-256相当
-- Zoom Server-to-Server OAuth: アプリレベル認証でユーザー認証不要
-- Resendメール送信: 非クリティカル扱い（失敗しても予約成功）
-- 外部API非ブロッキング: Zoom/Calendar削除失敗してもキャンセル成功
-- オーケストレーター共通化: 会員/ゲスト両方がcancelBooking()を使用
-- CVE-2025-29927対策: Layout内で認証・認可を再チェック
-- Defense-in-Depth: 各Server Action内でrequireAdmin()呼び出し
-- anyキャストでSupabase型推論問題を回避（既存パターン踏襲）
-- pg_cronジョブ定義をコメント化: 本番デプロイ時にVaultシークレット設定後にuncomment
-- メール送信フラグをTIMESTAMPTZで管理: 重複防止＋送信履歴追跡を同時に実現
-- send_thank_you_emailをmeeting_menusに配置: メニューごとにサンキューメール送信をON/OFF可能
-- [Phase 06]: Edge FunctionsからResend API直接呼び出し: Next.js経由せずDeno runtimeから直接fetch
-- [Phase 06]: HTMLテンプレート手動生成: React Email renderはサーバーサイド専用のためEdge Function内でHTML文字列を直接生成
-- [Phase 07]: 祝日パターンは day_of_week=0 の1行で管理（曜日無視）
-- [Phase 08-bug-fixes]: Zoom削除のaccountTypeはmeeting_menus.zoom_accountから取得（DBクエリ失敗時はデフォルト'A'）
-- [Phase 08-bug-fixes]: BUG-05はコードロジック正常のため診断ログ強化のみ実施（OAuth設定・GOOGLE_CALENDAR_ID確認用）
-- [Phase 08-bug-fixes]: sendWelcomeEmailは非ブロッキング: 失敗しても会員作成は成功扱い（Resendメール送信ポリシーを踏襲）
-- [Phase 08-bug-fixes]: date-fnsのformat()はtimeZone非対応のため日時フォーマットでは使用禁止（YAGNI: date-fns-tz追加せず）
-- [Phase 08-bug-fixes]: 全日時表示でtimeZone: 'Asia/Tokyo'を必須指定（Vercel環境はUTCで動作するため）
-- [Phase 09-playwright-foundation]: global-setup.ts/global-teardown.ts スタブ作成: npx playwright test --list が通るようにするためのRule 3自動修正（09-02で実装）
-- [Phase 09-playwright-foundation]: .env.test.example を .gitignore の !除外対象に追加: .env.* パターンとの衝突を解消
-- [Phase 09-playwright-foundation]: requireAdmin()はprofilesテーブルのroleカラムで判定するため、global-setupではauth.admin.createUser()後にprofilesテーブルへupsertが必要
-- [Phase 09-playwright-foundation]: 管理者ユーザーもログイン後は/bookings/newにリダイレクト（LoginForm実装の動作）
-- [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: Server Component E2E検証はglobal-setupでDB実データ挿入後に直接URLアクセスするパターンを採用（page.route()不可のため）
-- [Phase 10-test-scenarios]: [Phase 10-test-scenarios]: cancel_tokenをglobal-setupで生成しe2e-tokens.jsonに書き出す設計（テストファイルにトークン生成ロジック不要）
-- [Phase 10-test-scenarios]: memberPage フィクスチャは storageState で認証済みなため、テスト内でログイン操作は不要（KISS原則）
-- [Phase 10-test-scenarios]: ポイント残高変化テストはモック環境で不可のため、global-setup で設定した 100 ポイントの表示確認に留める
-- [Phase 11-ci-integration]: [Phase 11-ci-integration]: GITHUB_TOKENのみ使用（VERCEL_TOKEN不要）: wait-for-vercel-previewはGitHub Deployment Events経由でVercel Preview URLを取得
-- [Phase 11-ci-integration]: [Phase 11-ci-integration]: chromiumのみインストールでCI実行時間を短縮（KISS/YAGNI原則）
-- [Phase 11-ci-integration]: CIでE2E自動実行確認済み（6 passed, 2 failed, 2 skipped）: テスト失敗2件はテストコード側の問題でCI統合は正常動作
+- [v1.3 Research]: `meeting_menus.allowed_plan_types INTEGER[] DEFAULT NULL` — NULLで全プラン表示（後方互換）
+- [v1.3 Research]: アプリ層フィルタ採用（RLSポリシー変更なし）— 既存ポリシーとの競合回避
+- [v1.3 Research]: ZoomアカウントBはエラー3161フォールバックを必ず実装（空配列返却 + ログ）
+- [v1.3 Research]: pg_cronはUTC固定 — JST 20日09:00 = `0 0 20 * *`（UTC）
+- [v1.3 Research]: `point-overflow-notify` Edge Functionは `monthly-point-grant` パターン踏襲
+- [Phase 12-db]: allowed_plan_types INTEGER[] DEFAULT NULL — NULLで全プラン表示（後方互換）
+- [Phase 12-db]: CTE INSERT ... RETURNING パターンで SERIAL id を取得してから参照設定
+- [Phase 12-db]: GINパーシャルインデックス (WHERE IS NOT NULL) で NULL 行を除外し効率化
+- [Phase 13-zoom]: getZoomScheduledMeetings はトークンキャッシュを使いつつスケジュールキャッシュをバイパスする（予約確定時のリアルタイム確認保証）
+- [Phase 13-zoom]: getCachedZoomBusyTimes は15分TTL LRUCacheを使い通常のスロット表示フローに使用する
+- [Phase 13-zoom]: getCachedZoomBusyTimes（15分TTL）をスロットAPI用に使用、getZoomScheduledMeetings（キャッシュバイパス）を予約確定時に使用
+- [Phase 13-zoom]: Step 2.5はcompletedStepsに追加しない（読み取り専用ステップ、補償不要）
+- [Phase 14-plan-type-menu P01]: 空配列→NULL変換をonSubmit内で行う（D-06: 未選択=全プラン表示）
+- [Phase 14-plan-type-menu P01]: plans一覧はServer Component (page.tsx) でフェッチしClient Componentにprops経由で渡す
+- [Phase 14-plan-type-menu]: filterMenusByPlanType はジェネリクスで allowed_plan_types を持つ任意型に適用可能、フィルタ後に除外して MenuSelect に渡す
+- [Phase Phase 15-01]: CHECK 制約拡張は DROP CONSTRAINT IF EXISTS + ADD CONSTRAINT パターン（PostgreSQL は直接変更不可）
+- [Phase Phase 15-01]: pg_cron スケジュールは UTC 固定 0 0 20 * * (JST 20日 09:00)
+- [Phase 15-02]: 冪等性を task_execution_logs ベースで実装 (D-09) — monthly-point-grant と異なり point_transactions ではなく task_execution_logs で当月 point_overflow_notify 完了を確認
+- [Phase 15-02]: インライン HTML テンプレート — Deno 環境では React Email を使わず renderPointOverflowHtml 関数で生成 (check-reminder-emails パターン)
+- [Phase 16-01]: 2段階クエリ+JS集計採用: Supabase JSの3段ネストJOINを避け、シンプルさとデバッグ容易性を優先
+- [Phase 16-01]: calcActivityStatusをexport純粋関数としてmembers.tsに配置: テスト可能性とDRY原則を両立
+- [Phase 16-01]: getFollowUpMembers()はgetMembers()を内部呼び出してフィルタ: DRY+YAGNI原則
+- [Phase 16-02]: DataTable getRowClassNameはoptional prop (TData汎用) — Member以外のテーブルへの影響なし
+- [Phase 16-02]: FollowUpListはasync Server Component — dashboard/page.tsxをasync化せずSuspenseで囲む
+- [Phase 18-saga]: 各補償関数からtry-catchを削除してcompensateAllに集約: 失敗収集を可能にするため
+- [Phase 18-saga]: CompensationFailure[]返却: BookingSagaResultまでの失敗情報伝播パターン確立
+- [Phase 18-saga]: cancel.tsのcleanupFailuresはsuccess=trueのまま戻り値に含める（非ブロッキング方針維持）
 
-### v1.2 E2E Decisions (pre-decided from research)
+### Roadmap Evolution
 
-- Playwright 1.58.2採用: Next.js公式推奨、CI並列実行無料、storageState認証再利用対応
-- Google OAuth E2E自動化は対象外: Bot検出・ToS違反リスク。メール/パスワード認証でカバー
-- `workers: 1`でシリアル実行: Supabase dev環境の接続数制限による並列テスト干渉を防止
-- Vercel preview対象: develop環境のデプロイ保護設定を確認・無効化が必要（Phase 9実装前）
-- 外部API（Zoom/Calendar/Resend）は `page.route()` でモック化: クォータ消費と外部依存を回避
-- patrickedqvist/wait-for-vercel-preview@v1.3.3: CI統合でVercel Preview URL自動取得
+- Phase 17 added: E2Eテスト修正 — vitest設定でe2eディレクトリを除外し、Playwright E2Eテストがvitestで誤実行されない状態にする
 
 ### Pending Todos
 
@@ -129,39 +108,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 9実装前: Vercel dashboardでdevelopブランチのDeployment Protection設定を確認する必要がある
-- Phase 9実装前: `/login` ページにメール/パスワードフォームが存在するか確認が必要（storageState取得戦略に影響）
-- Phase 9実装前: Supabase `app_metadata` への `role: 'admin'` 付与手順を確定する必要がある
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 1 | ログインしている人がadminなら、ヘッダーに管理画面へリンクを表示 | 2026-03-01 | 6637760 | [1-admin](./quick/1-admin/) |
-| 2 | カジュアル30分セッション→発光ポジティブちょい浴び30分 文言変更 | 2026-03-02 | 90483db | - |
-| 3 | メールを有効化（FROM_EMAILをカスタムドメインに変更） | 2026-03-04 | 35b792d | [3-enable-email](./quick/3-enable-email/) |
-
-**Phase 1 Critical Risks: RESOLVED**
-- ポイント二重消費リスク: SELECT FOR UPDATE NOWAITをconsume_points()に実装
-- 二重予約リスク: EXCLUDE制約 + btree_gistで時間範囲重複を自動防止
-- RLSパフォーマンス: JWT claimをSELECTでラップしてキャッシュ化
-
-**Phase 2 Critical Risks: RESOLVED**
-- Sagaパターン: 8ステップの補償トランザクション実装
-- 冪等性: idempotency_keysテーブルで二重予約防止
-
-**Phase 3 Critical Risks: RESOLVED**
-- ゲストレート制限: LRUキャッシュ+IP+email複合キーで悪意あるアクセス防止
-- キャンセルセキュリティ: JWTキャンセルトークン（署名検証、7日有効期限）
-
-**Phase 4 Critical Risks: RESOLVED**
-- OAuth期限切れ: 'tokens'イベントでリフレッシュ自動更新実装済み
-- Google Calendar Rate Limit: 指数バックオフで対応済み（04-01）
-- 外部API削除失敗: 非ブロッキング処理でキャンセル成功を保証（04-03）
+- Phase 13実装前: ZOOM_B（無料アカウント）で `GET /users/me/meetings?type=scheduled` をcurl実行してAPIスコープ制限（エラー3161）を実機確認する必要がある
+- Phase 13実装前: Zoom OAuthスコープ名 `meeting:read:list_meetings:admin` をDeveloper Consoleで確認（現在信頼度LOW）
+- Phase 14実装前: `meeting_menus` 既存RLSポリシー「Anyone can view active menus」とアプリ層フィルタの競合を確認する
 
 ## Session Continuity
 
-Last session: 2026-03-16T08:00:05.742Z
-Stopped at: Completed 11-ci-integration-01-PLAN.md
+Last session: 2026-03-29T00:05:19.862Z
+Stopped at: Completed 18-saga-01-PLAN.md
 Resume file: None
-Next step: `/gsd:plan-phase 8`
+Next step: `/gsd:plan-phase 12`

@@ -21,6 +21,7 @@ const taskNameOptions: { value: TaskName | "all"; label: string }[] = [
   { value: "monthly_point_grant", label: "月次ポイント付与" },
   { value: "reminder_email", label: "リマインダーメール" },
   { value: "thank_you_email", label: "サンキューメール" },
+  { value: "point_overflow_notify", label: "ポイント溢れ通知" },
 ]
 
 const statusOptions: { value: TaskStatus | "all"; label: string }[] = [

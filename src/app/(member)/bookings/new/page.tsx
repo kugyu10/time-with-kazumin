@@ -6,6 +6,7 @@ import { MenuSelect, type Menu } from "@/components/bookings/MenuSelect"
 import { SlotPicker } from "@/components/bookings/SlotPicker"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
+import { filterMenusByPlanType } from "@/lib/utils/menu-filter"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
 
 interface Schedule {
@@ -48,12 +49,24 @@ export default function BookingNewPage() {
 
       const supabase = createClient()
 
-      // Fetch menus (only zoom_account B for members)
+      // ユーザーのplan_idを取得
+      const { data: { user } } = await supabase.auth.getUser()
+      let userPlanId: number | null = null
+      if (user) {
+        const { data: memberPlan } = await supabase
+          .from("member_plans")
+          .select("plan_id")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .single()
+        userPlanId = memberPlan?.plan_id ?? null
+      }
+
+      // Fetch menus
       const { data: menusData, error: menusError } = await supabase
         .from("meeting_menus")
-        .select("id, name, description, duration_minutes, points_required")
+        .select("id, name, description, duration_minutes, points_required, allowed_plan_types")
         .eq("is_active", true)
-        .eq("zoom_account", "B")
         .order("points_required", { ascending: true })
 
       if (menusError) throw menusError
@@ -65,7 +78,10 @@ export default function BookingNewPage() {
 
       if (schedulesError) throw schedulesError
 
-      setMenus(menusData || [])
+      const filteredMenus = filterMenusByPlanType(menusData ?? [], userPlanId)
+      // MenuSelect の Menu 型には allowed_plan_types が不要なので除外して渡す
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      setMenus(filteredMenus.map(({ allowed_plan_types, ...rest }) => rest))
       setSchedules(schedulesData || [])
     } catch (err) {
       console.error("Failed to fetch data:", err)

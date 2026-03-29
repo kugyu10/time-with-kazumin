@@ -1,275 +1,274 @@
-# E2Eテストシナリオ調査: 予約システム
+# Feature Research
 
-**ドメイン:** コーチングセッション予約管理システム (Next.js + Supabase)
-**調査日:** 2026-03-15
-**マイルストーン:** v1.2 安定化 — Playwright E2Eテスト導入
-**信頼度:** HIGH (Playwright公式ドキュメント + Supabase実証パターン)
-
----
-
-## テーブルステークス（必須テストシナリオ）
-
-「これが壊れたらサービスが使えない」クリティカルパスのテスト。E2Eテストとして必ず実装すべき。
-
-### 1. ゲスト予約フロー（最優先）
-
-| シナリオ | なぜ必須か | 複雑度 | 備考 |
-|---------|-----------|--------|------|
-| トップページ → 日付選択 → スロット一覧表示 | エントリーポイント。ここが壊れると全ゲストが詰まる | LOW | `/booking/new`ルート |
-| スロット選択 → 名前/メール入力 → 予約確定 | ゲスト予約の唯一のハッピーパス。壊れると売上0 | MEDIUM | Zoom生成・メール送信が発火するポイント |
-| 予約完了画面にZoom URLが表示される | #1バグ関連。Zoomリンクがないとセッション不可 | MEDIUM | v1.2の修正対象 |
-| キャンセルリンク → 予約キャンセル確認 → 完了 | ゲスト自身がキャンセルできることの保証 | MEDIUM | トークン認証のキャンセルフロー |
-| 時刻が日本時間(JST)で表示される | #2バグ関連。UTC表示はユーザー混乱の原因 | LOW | `/booking/[id]`ページ |
-
-### 2. 会員認証フロー
-
-| シナリオ | なぜ必須か | 複雑度 | 備考 |
-|---------|-----------|--------|------|
-| メール/パスワードでログイン → ダッシュボードへリダイレクト | メール認証は代替OAuthに依存しないテスト可能なフロー | LOW | Supabase email auth |
-| 未認証で `/dashboard` にアクセス → ログインページにリダイレクト | ルート保護が機能していることの確認 | LOW | `middleware.ts`のテスト |
-| ログアウト → セッションクリア確認 | 認証状態のライフサイクル | LOW | |
-
-### 3. 会員予約フロー
-
-| シナリオ | なぜ必須か | 複雑度 | 備考 |
-|---------|-----------|--------|------|
-| ログイン → メニュー選択 → 日付選択 → ポイント確認 → 予約確定 | 会員のメインユースケース。ポイント消費が正常動作するか | HIGH | Sagaパターンの多段フロー |
-| 予約後にポイント残高が減少する | ポイント制の根幹機能。壊れたら信頼性が崩壊 | MEDIUM | 予約前後のポイント数を比較 |
-| 予約一覧に新しい予約が表示される | 予約履歴の可視性 | LOW | `/bookings`ページ |
-| 予約キャンセル → ポイントが返還される | ポイント返還のトランザクション整合性 | HIGH | キャンセル前後のポイント数を比較 |
-
-### 4. 管理者フロー（コア操作）
-
-| シナリオ | なぜ必須か | 複雑度 | 備考 |
-|---------|-----------|--------|------|
-| 管理者ログイン → `/admin`にアクセス可能 | 管理者専用ルートの保護確認 | LOW | Role-based access |
-| 予約一覧が表示される | 管理者の最基本操作 | LOW | `/admin/bookings` |
-| 会員一覧が表示される | 会員管理の基盤 | LOW | `/admin/members` |
+**Domain:** コーチングセッション予約管理システム — v1.3 運用改善機能
+**Researched:** 2026-03-27
+**Confidence:** HIGH
 
 ---
 
-## 差別化テスト（nice-to-have）
+## 概要
 
-「あると品質が上がる」が、なくても最低限は動くシナリオ。
-
-### 外部サービス統合テスト（モック前提）
-
-| シナリオ | 価値 | 複雑度 | 実装方針 |
-|---------|------|--------|---------|
-| 予約確定時にZoom API呼び出しが発火する | #1バグの予防。APIが呼ばれたことを検証 | HIGH | `page.route()` でモック、リクエストをキャプチャ |
-| キャンセル時にZoom削除APIが呼ばれる | #1バグの直接的テスト。修正確認に有効 | HIGH | 同上 |
-| 予約確定時にGoogle Calendar APIが呼ばれる | #4バグの予防テスト | HIGH | `page.route()` でモック |
-| 予約確定時にResend APIが呼ばれる | メール送信の発火確認 | MEDIUM | `page.route()` でモック |
-| 招待メール送信APIが呼ばれる | #3バグの直接的テスト | MEDIUM | リクエストボディの検証込み |
-
-### エラー・エッジケーステスト
-
-| シナリオ | 価値 | 複雑度 | 備考 |
-|---------|------|--------|------|
-| ポイント残高不足での予約試行 → エラー表示 | ガード条件の検証 | MEDIUM | UI上でエラーメッセージ確認 |
-| 満枠スロットへの予約試行 → 拒否 | ダブルブッキング防止 | MEDIUM | |
-| メールアドレス不正入力 → バリデーションエラー | フォームバリデーション | LOW | |
-| 存在しない予約IDへのアクセス → 404 | エラーハンドリング | LOW | |
-
-### 管理者高度操作
-
-| シナリオ | 価値 | 複雑度 | 備考 |
-|---------|------|--------|------|
-| 管理者が会員を招待 → 招待メールAPIが呼ばれる | #3バグの直接的テスト | HIGH | `/admin/members`の招待フロー |
-| 管理者がポイントを手動付与 → 残高が増える | ポイント管理の保証 | MEDIUM | |
-| 管理者が予約をキャンセル → 予約ステータス変更 | 管理者権限の確認 | MEDIUM | |
-| 営業時間設定の変更 → スロット一覧に反映される | #4バグ関連。カレンダーブロックの整合性 | HIGH | 設定変更後にスロット再取得 |
+v1.3で追加する4機能の期待される動作・複雑度・依存関係を整理する。
+これらはいずれも「既存機能の運用品質を上げる」機能であり、新規のユーザーフローを作るわけではない。
 
 ---
 
-## アンチフィーチャー（E2Eでテストすべきでないこと）
+## Feature Landscape
 
-| 対象 | なぜテストしない | 代わりに |
-|------|---------------|---------|
-| Google OAuth UIフロー | ToS違反リスク。CAPTCHA・2FAで必ずフレーキーになる。Playwrightは外部ドメインのUI自動操作を推奨しない | Supabase REST APIでemail/password認証し、セッションをstorageStateで再利用 |
-| 実際のZoom API呼び出し | クォータ消費・テスト用会議の増殖・API可用性に依存 | `page.route('/api/admin/zoom/*', handler)` でモック |
-| 実際のGoogle Calendar API呼び出し | 外部サービス可用性依存・テストデータ汚染 | `page.route()` でモック。APIが呼ばれたことだけ検証 |
-| 実際のResend APIでメール送信 | 送信クォータ消費（月3,000通）・`delivered@resend.dev` は実際のユーザーに届かない | `page.route('/api/bookings/*', handler)` でモック |
-| Supabase Edge Functions（pg_cron）の直接テスト | E2Eの範囲外。単体テスト/インテグレーションテストで対応 | 月次ポイント付与等はVitest単体テスト |
-| 全管理者CRUDの網羅 | ROI低下。UIが複雑でメンテコストが高い | 管理者フローはスモークテスト程度にとどめ、ロジックはVitest |
-| 全バリデーションパターン網羅 | E2Eコストが高すぎる | Vitest + React Testing Library で十分 |
+### Table Stakes (Users Expect These)
+
+既存システムがある以上、これらが欠けると「壊れている」と感じられる機能。
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| プランタイプ別メニュー表示 | 会員予約画面で「自分のプランでは使えないメニュー」が表示されることはUX上の欠陥 | LOW | 現在 `zoom_account="B"` の固定フィルタで代替されているが、プラン概念とずれている |
+| Zoomカレンダーのスロットブロック | 管理者がZoom上で直接ブロックした時間帯も予約不可になるのが当然 | MEDIUM | Zoom側のスケジュール済み会議をbusy時間として扱う暫定対応 |
+| ポイント繰り越し上限の事前通知 | `plans.max_points` が設定されているプランでは、溢れる前に知らせることがユーザーへの誠実な対応 | MEDIUM | 既存の月次バッチ基盤 (Edge Function + pg_cron) を再利用できる |
+| 会員アクティビティの可視化 | 管理者が「最近来ていない会員」を一目で確認できることは、サービス品質維持に必須 | LOW | 既存の会員一覧画面に色分けバッジを追加する形 |
+
+### Differentiators (Competitive Advantage)
+
+このサービス独自の価値提供になりうる機能。
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| プランタイプ別メニュー制御 (管理UI) | 管理者がメニューとプランの対応を柔軟に設定できる (例: Premiumプランのみ90分セッション可) | MEDIUM | DBスキーマ変更 (中間テーブル) が必要。見た目のシンプルさを維持しながら設定の柔軟性を担保することが差別化 |
+| ポイント溢れ通知メール | 月次ポイント付与前に「XX pt 溢れます、ご利用ください」という先手の通知はTimeRex等にはない独自機能 | MEDIUM | 毎月20日バッチ。Resend + React Email テンプレート追加 |
+
+### Anti-Features (Commonly Requested, Often Problematic)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| リアルタイムZoom空き同期 | 「常に最新のZoom状況を反映したい」 | Zoom APIポーリングのクォータ超過リスク。Server-to-Server OAuthでrate limitは5req/秒。キャッシュなしだと一度のスロット取得で複数API呼び出しが発生 | 既存の `getCachedBusyTimes()` パターンを流用し、Zoom busy times に15分キャッシュを適用 |
+| Zoom上の会議をプラットフォームで全管理 | 「Zoom画面を見なくて済むように」 | Zoom APIは `GET /users/me/meetings?type=scheduled` でリスト取得できるが、他システム（Zoom Schedulerなど）から作成された会議を消したり変更する権限は適切でない | 読み取り専用でbusy時間として参照するにとどめる |
+| プランに応じた予約上限数制限 | 「高いプランほど多く予約できるようにしたい」 | 現在のDBスキーマにそのような制約がない。追加すると予約フローのSagaパターンに新ステップが増え複雑化 | v1.3スコープ外。ポイント制がすでに自然な予約上限として機能している |
+| 30日/60日未訪問アラートのメール通知 | 「管理者が手動で確認する必要がある」 | 管理者向け通知メールを送ることはResend月3,000通の枠を圧迫し、ROIが低い | ダッシュボードのUI表示にとどめる。「色分けで見れば十分」な規模感 (現在約10人) |
 
 ---
 
-## 認証戦略: Google OAuth問題の解決
+## Feature Details
 
-### 問題の核心
+### 機能1: プランタイプ別メニュー表示 (#10)
 
-Google OAuth を Playwright で直接テストすることは：
-- Google ToS 違反のリスクがある（自動ログインの禁止）
-- CAPTCHA・不審なログイン検知で必ずフレーキーになる
-- CI/CD環境では機能しない（新しいIPからのログインはブロックされる）
+**期待される動作:**
+- 管理者がメニューを作成・編集する際、「表示対象プラン」を選択できる
+- 会員がメニュー選択画面にアクセスした際、自分のプランで利用可能なメニューのみが表示される
+- ゲスト（`zoom_account="B"` のカジュアルセッション）には影響しない
 
-### 推奨アプローチ: Supabase REST API 認証
+**現状分析:**
+- 現在、会員予約画面は `zoom_account="B"` でハードコードされたフィルタを使用（`bookings/new/page.tsx` L53-58）
+- `plans` テーブルと `meeting_menus` テーブルの間に関連を持つ中間テーブルが存在しない
+- `meeting_menus` に `plan_type` カラムを追加するか、中間テーブル `plan_menus` を作るかの設計判断が必要
 
-**信頼度: HIGH** (mokkapps.de実証 + Supabase公式パターン)
+**DBスキーマ変更の選択肢:**
 
-```
-1. playwright/setup/auth.setup.ts でSupabase REST APIを直接叩く
-   POST {SUPABASE_URL}/auth/v1/token?grant_type=password
-   → アクセストークンとリフレッシュトークンを取得
+| アプローチ | 設計 | メリット | デメリット |
+|-----------|------|---------|-----------|
+| カラム追加 | `meeting_menus.allowed_plan_ids integer[]` | シンプル | PostgreSQL配列の取り扱いが若干煩雑 |
+| 中間テーブル | `plan_menus(plan_id, menu_id)` | 正規化・拡張性が高い | マイグレーション + JOIN追加のコスト |
 
-2. セッションをplaywright/.auth/member.json に保存
-   (sb-{PROJECT_ID}-auth-token をlocalStorageキーとして保存)
+**推奨:** 中間テーブル `plan_menus` (将来の多対多関係に対応可能。現在でも1メニューが複数プランで使えるケースを想定する必要がある)
 
-3. テストの beforeEach で context.addInitScript() を使って
-   localStorageにセッションを注入する
+**実装ポイント:**
+- 中間テーブルが空（全プラン未設定）の場合のデフォルト動作を決める（全プランに表示 or 誰にも表示しない）
+- 管理者UIのメニュー作成/編集フォームにプラン選択UIを追加
+- 会員予約API/クエリでJOINするか、プランIDでフィルタするかの最適化
 
-4. .gitignore に playwright/.auth/ を追加
-```
+**複雑度:** MEDIUM（DBスキーマ変更 + Admin UI + 予約フィルタロジック）
 
-**Google OAuthユーザーのテスト方法:**
+---
 
-- テスト専用の Supabase email/password アカウントを用意
-- そのアカウントに管理者と同等のロールを付与
-- 本番のGoogle OAuthフローは「ログインボタンがある」「Googleリダイレクトが発火する」レベルでの存在確認のみ（実際の認証フローはテストしない）
+### 機能2: Zoomカレンダースケジュールブロック (#12)
 
-### ロールごとのセッション管理
+**期待される動作:**
+- Zoom A/B アカウントで「スケジュール済み（scheduled）」の会議時間も、空きスロット計算時のbusy時間として扱われる
+- 具体的には、`GET /users/me/meetings?type=scheduled` でZoom上のスケジュール済み会議リストを取得し、各会議の `start_time` + `duration` をbusy時間として変換する
+- Google Calendarのbusy times (`getCachedBusyTimes`) と同様の15分キャッシュを適用する
 
-```
-playwright/.auth/
-  member.json    → 一般会員セッション
-  admin.json     → 管理者セッション
-  guest.json     → 未認証（不要 = 空のstorageState）
+**Zoom API確認済みの仕様:**
+- `GET /users/me/meetings?type=scheduled` — スケジュール済み会議リスト取得（HIGH confidence: 公式ドキュメント確認済み）
+- レスポンスには `start_time`（ISO 8601形式）と `duration`（分単位）が含まれる
+- Server-to-Server OAuthで取得したトークンで呼び出し可能（既存の `getZoomAccessToken()` を再利用可能）
+- **制約:** 日付範囲でのフィルタリングはできない。全スケジュール済み会議を取得してクライアント側で日付範囲フィルタが必要
+
+**実装ポイント:**
+- 既存の `zoom.ts` に `getZoomScheduledMeetings(accountType)` 関数を追加
+- A・Bアカウント両方を取得して統合
+- `busy_times[]` 形式（`{ start: string, end: string }`）に変換して既存の空きスロット計算と合流
+- 15分キャッシュ（LRUCache）を適用してAPI呼び出しを削減
+- このシステムで作成した予約のZoom会議は重複してブロックされるため、除外ロジックが必要（bookings テーブルとの突き合わせ or Zoom meeting IDで除外）
+
+**複雑度:** MEDIUM（Zoom API追加 + キャッシュ + 既存スロット計算との統合）
+
+**「暫定対応」と注記されている理由:**
+- 完全な解決策はZoom CalendarのFreeBusy APIを使うことだが、スコープ設定や権限が異なる可能性がある
+- `type=scheduled` での取得はシステム外から作成されたZoom会議（他システムからのスケジュール等）を全て拾う
+
+---
+
+### 機能3: ポイント溢れ通知メール (#9)
+
+**期待される動作:**
+- 毎月20日のバッチ処理で、翌月1日のポイント付与後に `max_points` を超過する予定の会員を特定
+- 対象会員に「XX ポイント溢れます。今月中にご利用ください」という内容のメールを送信
+- ポイントに繰り越し上限がないプラン（`plans.max_points IS NULL`）の会員は対象外
+
+**既存インフラとの関係:**
+- `monthly-point-grant` Edge Functionと同様のパターンで `point-overflow-notify` Edge Functionを追加
+- pg_cronで「毎月20日に実行」のスケジュール設定
+- Resend + React Email テンプレート追加（既存の `sendWelcomeEmail` 等と同じパターン）
+
+**溢れ量の計算:**
+```sql
+SELECT
+  mp.user_id,
+  p.email,
+  p.full_name,
+  mp.current_points,
+  mp.monthly_points,
+  pl.max_points,
+  (mp.current_points + mp.monthly_points) - pl.max_points AS overflow_points
+FROM member_plans mp
+JOIN profiles p ON mp.user_id = p.id
+JOIN plans pl ON mp.plan_id = pl.id
+WHERE mp.status = 'active'
+  AND pl.max_points IS NOT NULL
+  AND (mp.current_points + mp.monthly_points) > pl.max_points
 ```
 
+**実装ポイント:**
+- Edge Function: 冪等性チェック（今月20日分の通知が既に送信済みか確認）
+- メールテンプレート: `PointOverflowNotification` コンポーネント
+- `task_execution_logs` への記録（既存パターンと統一）
+- テスト考慮: Resend がモックできる環境での動作確認
+
+**複雑度:** MEDIUM（Edge Function追加 + pg_cron設定 + Emailテンプレート追加）
+
 ---
 
-## 外部サービスのモック戦略
+### 機能4: 会員アクティビティ表示 (#8)
 
-### Playwright `page.route()` によるAPIインターセプト
+**期待される動作:**
+- 管理者の会員一覧画面（`/admin/members`）で、最終予約日から30日/60日以上経過した会員に色付きバッジを表示
+  - 30〜59日未訪問: 黄色バッジ「30日未訪問」
+  - 60日以上未訪問: 赤バッジ「60日未訪問」
+  - 予約履歴なし: 赤バッジ「未利用」
+- ダッシュボード（`/admin/dashboard`）に「要フォロー会員リスト」セクションを追加（30日以上未訪問の会員を列挙）
 
-**信頼度: HIGH** (Playwright公式ドキュメント)
-
-テスト対象はアプリケーションの動作であり、外部サービスの動作ではない。Next.js Route Handlers(`/api/*`)への呼び出しは実際に実行し、そのRoute HandlerからZoom/Google Calendar/Resendへの外部HTTP呼び出しをモックする。
-
-**戦略の選択肢:**
-
-| 戦略 | 概要 | 用途 |
-|------|------|------|
-| **フロントエンドモック** | `page.route('/api/admin/zoom/*')` でブラウザからのAPIコールをインターセプト | 外部APIの影響を完全に遮断したいテスト |
-| **MSW (Mock Service Worker)** | Service WorkerレベルでAPIをモック。テストコードと実コードの境界が明確 | より本格的な統合テスト環境 |
-| **環境変数切り替え** | `TEST_MODE=true` でRoute Handler内部のZoom/Calendar呼び出しをスキップ | シンプルだがコードを汚染する |
-
-**v1.2での推奨: `page.route()` アプローチ**
-
-- 導入コストが最も低い
-- Playwrightのみで完結（追加ツール不要）
-- Route Handlersのエンドポイントは実際に呼ばれるため、APIのルーティングテストも兼ねる
-
-```typescript
-// 例: Zoom API モック
-await page.route('**/api/admin/zoom/**', async (route) => {
-  await route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ meetingId: 'mock-123', joinUrl: 'https://zoom.us/j/mock' })
-  });
-});
+**最終予約日の計算:**
+```sql
+SELECT
+  mp.user_id,
+  MAX(b.start_time) AS last_booking_at
+FROM member_plans mp
+LEFT JOIN bookings b ON mp.id = b.member_plan_id
+  AND b.status != 'canceled'
+WHERE mp.status = 'active'
+GROUP BY mp.user_id
 ```
 
-```typescript
-// 例: Zoom削除呼び出しを検証（#1バグテスト）
-const zoomDeleteRequests: string[] = [];
-await page.route('**/api/admin/zoom/status', async (route) => {
-  zoomDeleteRequests.push(route.request().url());
-  await route.fulfill({ status: 200, body: JSON.stringify({ ok: true }) });
-});
-// キャンセル操作後
-await expect(zoomDeleteRequests.length).toBeGreaterThan(0);
-```
+**実装ポイント:**
+- `getMembers()` のクエリを拡張して `last_booking_at` を含める
+- フロントエンド側（`columns.tsx`）で現在日時との差分を計算してバッジをレンダリング
+- Tailwind で `30日未訪問=yellow`、`60日以上=red` の色を適用
+- ダッシュボードには既存コンポーネントの構造を踏襲してリスト表示を追加
 
-### Resend メールテスト
-
-**信頼度: HIGH** (Resend公式ドキュメント)
-
-- テスト用メールアドレスは `delivered@resend.dev` を使用（Resend公式推奨）
-- `page.route()` で `/api/bookings/*` のレスポンスをモックする場合はResendは呼ばれない
-- メール送信が呼ばれたことを確認したい場合: リクエストインターセプトでボディを検証
+**複雑度:** LOW（SQLクエリ拡張 + フロントエンドバッジ表示）
 
 ---
 
-## テストシナリオ優先度マトリクス
-
-| シナリオ | ビジネス影響 | 実装コスト | CI重要度 | 優先度 |
-|---------|-----------|-----------|---------|-------|
-| ゲスト予約ハッピーパス | CRITICAL | LOW | HIGH | **P0** |
-| 時刻JST表示確認（#2修正確認） | HIGH | LOW | HIGH | **P0** |
-| 会員ログイン → ダッシュボード | CRITICAL | LOW | HIGH | **P0** |
-| 未認証リダイレクト確認 | HIGH | LOW | HIGH | **P0** |
-| 会員予約ハッピーパス + ポイント消費 | CRITICAL | MEDIUM | HIGH | **P1** |
-| 予約キャンセル + ポイント返還 | HIGH | MEDIUM | HIGH | **P1** |
-| Zoom削除API呼び出し確認（#1修正確認） | HIGH | HIGH | MEDIUM | **P1** |
-| ゲストキャンセルフロー | MEDIUM | MEDIUM | MEDIUM | **P1** |
-| 管理者スモークテスト（ログイン・一覧確認） | MEDIUM | LOW | MEDIUM | **P2** |
-| 招待メールAPI呼び出し確認（#3修正確認） | MEDIUM | HIGH | MEDIUM | **P2** |
-| カレンダーブロック反映確認（#4修正確認） | MEDIUM | HIGH | LOW | **P2** |
-| ポイント残高不足エラー | MEDIUM | MEDIUM | LOW | **P2** |
-| 管理者ポイント手動付与 | LOW | MEDIUM | LOW | **P3** |
-| エラーハンドリング（404など） | LOW | LOW | LOW | **P3** |
-
-**優先度の定義:**
-- P0: スモークテスト。壊れていたらリリース不可
-- P1: コアフロー。マージ前に必ず通過
-- P2: バグ修正確認。今マイルストーンのバグfixを担保
-- P3: 将来追加。安定後に拡充
-
----
-
-## 機能の依存関係（テスト観点）
+## Feature Dependencies
 
 ```
-[ゲスト予約テスト]
-    ├── requires → [スロット表示テスト] (前提条件)
-    ├── verifies → [Zoom生成APIモック] (外部サービス)
-    ├── verifies → [メール送信APIモック] (外部サービス)
-    └── verifies → [JST時刻表示] (#2バグ)
+[プランタイプ別メニュー表示]
+    └── requires ──> [DBスキーマ変更 (plan_menus 中間テーブル)]
+                        └── requires ──> [管理者UI: メニュー作成フォームのプラン選択追加]
+    └── requires ──> [会員予約クエリのフィルタロジック変更]
 
-[会員予約テスト]
-    ├── requires → [会員ログインセットアップ] (auth.setup.ts)
-    ├── requires → [スロット表示テスト] (前提条件)
-    ├── verifies → [ポイント消費トランザクション]
-    └── verifies → [Zoom生成APIモック]
+[Zoomカレンダーブロック]
+    └── requires ──> [既存 zoom.ts の getZoomAccessToken()]
+    └── enhances ──> [既存 getCachedBusyTimes() パターン]
+    └── depends ──> [空きスロット計算ロジック (SlotPicker)]
 
-[キャンセルテスト]
-    ├── requires → [予約作成テスト] (前提条件)
-    ├── verifies → [Zoom削除APIモック] (#1バグ)
-    ├── verifies → [ポイント返還トランザクション]
-    └── verifies → [キャンセルメールAPIモック]
+[ポイント溢れ通知メール]
+    └── requires ──> [既存 monthly-point-grant Edge Function パターン]
+    └── requires ──> [新規 React Email テンプレート]
+    └── requires ──> [pg_cron 新スケジュール登録]
+    └── depends ──> [plans.max_points が設定されている前提]
 
-[管理者テスト]
-    ├── requires → [管理者ログインセットアップ] (auth.setup.ts)
-    └── verifies → [招待メールAPIモック] (#3バグ)
+[会員アクティビティ表示]
+    └── enhances ──> [既存 getMembers() アクション]
+    └── enhances ──> [既存 /admin/members columns.tsx]
+    └── enhances ──> [既存 /admin/dashboard ページ]
 ```
 
----
+### Dependency Notes
 
-## 情報源
-
-### Playwright 認証・モック
-- [Authentication | Playwright](https://playwright.dev/docs/auth) — storageState, setup project パターン (HIGH confidence)
-- [Mock APIs | Playwright](https://playwright.dev/docs/mock) — page.route() によるネットワークモック (HIGH confidence)
-- [Login at Supabase via REST API in Playwright E2E Test](https://mokkapps.de/blog/login-at-supabase-via-rest-api-in-playwright-e2e-test) — Supabase+Playwright実証パターン (HIGH confidence)
-
-### Supabase + Playwright
-- [Testing with Next.js 15, Playwright, MSW, and Supabase](https://micheleong.com/blog/testing-with-nextjs-15-and-playwright-msw-and-supabase) — MSWとJWT生成パターン (MEDIUM confidence)
-- [Supawright - Playwright test harness for Supabase](https://github.com/isaacharrisholt/supawright) — テストデータクリーンアップ参考 (MEDIUM confidence)
-
-### Next.js テスト
-- [Testing: Playwright | Next.js](https://nextjs.org/docs/app/guides/testing/playwright) — App Router対応の公式ガイド (HIGH confidence)
-
-### Resend テスト
-- [How to set up E2E testing with Playwright - Resend](https://resend.com/docs/knowledge-base/end-to-end-testing-with-playwright) — `delivered@resend.dev` 推奨 (HIGH confidence)
-
-### Google OAuth テスト
-- [End-to-End Testing Auth Flows with Playwright and Next.js](https://testdouble.com/insights/how-to-test-auth-flows-with-playwright-and-next-js) — OAuth代替戦略 (MEDIUM confidence)
-- [Auth.js | Testing](https://authjs.dev/guides/testing) — Credentials providerによる代替 (MEDIUM confidence)
+- **プランタイプ別メニュー**: 中間テーブル追加のマイグレーションが先行必須。その後に管理UI変更と予約フィルタ変更を並行できる
+- **Zoomカレンダーブロック**: 独立して実装可能。空きスロット計算の最終ステップで統合する
+- **ポイント溢れ通知**: `plans.max_points` の値を持つプランが存在することが前提。現状は `max_points` がNULLのプランも存在しうる
+- **会員アクティビティ**: 完全に独立。他3機能への依存なし。最もリスクが低い
 
 ---
-*v1.2 安定化マイルストーン向けE2Eテストシナリオ調査*
-*調査日: 2026-03-15*
+
+## MVP Definition
+
+### Launch With (v1.3) — 全4機能が今回のスコープ
+
+- [x] **プランタイプ別メニュー表示** — 予約体験の根幹。「使えないメニューが見える」のはUX上の問題
+- [x] **Zoomカレンダーブロック** — Zoom直接ブロックと予約システムの矛盾は運用上の混乱を招く
+- [x] **ポイント溢れ通知メール** — `max_points` が設定されたプランがある場合の誠実な対応
+- [x] **会員アクティビティ表示** — 管理者の「感覚的な把握」をデータで補完する
+
+### Add After Validation (v1.4+)
+
+- [ ] **プランタイプ別メニューの動的切り替え** — プラン変更時にメニュー再フィルタ（現在は会員登録時固定）
+- [ ] **アクティビティ表示の詳細化** — 最終予約内容（どのメニューを使ったか）を合わせて表示
+- [ ] **ポイント溢れ通知の個別カスタマイズ** — 通知のN日前設定など
+
+### Future Consideration (v2+)
+
+- [ ] **Zoom FreeBusy APIへの移行** — `type=scheduled` での暫定取得から正式なFreeBusy APIへ
+- [ ] **LINE通知対応** — メール以外のチャンネル（Out of Scope扱い、要求が出たら検討）
+- [ ] **会員向けポイント残高アラート** — 会員自身が「溢れそうです」通知を受け取る機能
+
+---
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| プランタイプ別メニュー表示 | HIGH | MEDIUM | P1 |
+| Zoomカレンダーブロック | HIGH | MEDIUM | P1 |
+| ポイント溢れ通知メール | MEDIUM | MEDIUM | P2 |
+| 会員アクティビティ表示 | MEDIUM | LOW | P1 |
+
+**優先度キー:**
+- P1: v1.3でリリース（全4機能が対象）
+- P2: P1の後にリリース、または同一マイルストーン内の後半フェーズ
+
+**実装推奨順序:**
+1. 会員アクティビティ表示（LOW complexity、独立、即リリース可）
+2. Zoomカレンダーブロック（MEDIUM complexity、独立）
+3. プランタイプ別メニュー表示（MEDIUM complexity、DBスキーマ変更あり）
+4. ポイント溢れ通知メール（MEDIUM complexity、新Edge Function + テンプレート）
+
+---
+
+## Sources
+
+- Zoom Meetings API公式ドキュメント — `GET /users/me/meetings?type=scheduled` の動作確認（HIGH confidence）
+  - https://developers.zoom.us/docs/api/meetings/
+- Zoom Developer Forum — 日付範囲フィルタ非対応の確認（HIGH confidence）
+  - https://devforum.zoom.us/t/how-to-find-all-upcoming-meetings-on-a-given-date/26995
+- 既存コードベース調査（HIGH confidence）:
+  - `src/lib/integrations/zoom.ts` — Server-to-Server OAuth実装、LRUキャッシュパターン
+  - `src/lib/integrations/google-calendar.ts` — getCachedBusyTimes() パターン（Zoomにも流用可能）
+  - `supabase/functions/monthly-point-grant/index.ts` — Edge Function + 冪等性チェックパターン
+  - `supabase/migrations/20260222000003_stored_procedures.sql` — grant_monthly_points() の max_points 上限ロジック
+  - `src/app/(member)/bookings/new/page.tsx` — 現在の zoom_account="B" ハードコードフィルタ（改修対象）
+  - `src/app/admin/members/columns.tsx` — アクティビティバッジ追加対象
+
+---
+*v1.3 運用改善マイルストーン向けフィーチャーリサーチ*
+*調査日: 2026-03-27*

@@ -22,6 +22,7 @@ export type Menu = {
   description: string | null
   is_active: boolean
   send_thank_you_email: boolean
+  allowed_plan_types: number[] | null
   created_at: string
   updated_at: string
 }
