@@ -1,12 +1,21 @@
 import { test, expect } from '../fixtures'
 
-// ヘルパー: 2日後の平日を YYYY-MM-DD 形式で返す
+// ヘルパー: 今週の表示範囲内にある翌平日を YYYY-MM-DD 形式で返す
 function getNextWeekday(): string {
-  const date = new Date()
-  date.setDate(date.getDate() + 2)
-  if (date.getDay() === 0) date.setDate(date.getDate() + 1)
-  if (date.getDay() === 6) date.setDate(date.getDate() + 2)
-  return date.toISOString().slice(0, 10)
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+  const friday = new Date(monday)
+  friday.setDate(monday.getDate() + 4)
+
+  const tomorrow = new Date(now)
+  tomorrow.setDate(now.getDate() + 1)
+  if (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
+    return friday.toISOString().slice(0, 10)
+  }
+  return tomorrow.toISOString().slice(0, 10)
 }
 
 // ヘルパー: 指定日付のスロット3件を返す
@@ -90,7 +99,7 @@ test.describe('会員予約フロー', () => {
     await expect(memberPage.getByText('予約内容の確認')).toBeVisible()
 
     // 「予約する」ボタンをクリック
-    await memberPage.getByRole('button', { name: '予約する' }).click()
+    await memberPage.getByRole('main').getByRole('button', { name: '予約する' }).click()
 
     // ダッシュボードへリダイレクト
     await expect(memberPage).toHaveURL(/\/dashboard/)
@@ -103,6 +112,6 @@ test.describe('会員予約フロー', () => {
     await expect(memberPage.getByText('ポイント残高')).toBeVisible()
 
     // global-setup で設定した 100 ポイントが表示されること
-    await expect(memberPage.getByText('100')).toBeVisible()
+    await expect(memberPage.getByRole('main').getByText('100')).toBeVisible()
   })
 })

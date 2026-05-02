@@ -2,14 +2,27 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// ヘルパー: 2日後の平日を YYYY-MM-DD 形式で返す
+// ヘルパー: 今週の表示範囲内にある翌平日を YYYY-MM-DD 形式で返す
+// SlotPickerは今週月曜日から7日間を表示するため、その範囲内の日付を返す
 function getNextWeekday(): string {
-  const date = new Date()
-  date.setDate(date.getDate() + 2)
-  // 土日の場合は月曜日にずらす
-  if (date.getDay() === 0) date.setDate(date.getDate() + 1)
-  if (date.getDay() === 6) date.setDate(date.getDate() + 2)
-  return date.toISOString().slice(0, 10)
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  // 今週の月曜日を計算
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+  // 今週の金曜日
+  const friday = new Date(monday)
+  friday.setDate(monday.getDate() + 4)
+
+  // 明日が今週の範囲内（月〜日）であればそれを使う
+  const tomorrow = new Date(now)
+  tomorrow.setDate(now.getDate() + 1)
+  // 土日ならその週の金曜に戻す
+  if (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
+    return friday.toISOString().slice(0, 10)
+  }
+  return tomorrow.toISOString().slice(0, 10)
 }
 
 // ヘルパー: 指定日付のスロット3件を返す
@@ -164,7 +177,7 @@ test.describe('ゲストキャンセルフロー', () => {
     await page.getByRole('button', { name: '予約をキャンセル' }).click()
 
     // AlertDialog が表示されること
-    await expect(page.getByText('予約をキャンセルしますか?')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '予約をキャンセルしますか?' })).toBeVisible()
 
     // 「キャンセルする」をクリック
     await page.getByRole('button', { name: 'キャンセルする' }).click()
