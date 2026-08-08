@@ -21,6 +21,7 @@ import { addCalendarEvent, deleteCalendarEvent } from "../integrations/google-ca
 import { sendBookingConfirmationEmail } from "../integrations/email"
 import { generateCancelToken } from "../tokens/cancel-token"
 import { retryWithExponentialBackoff } from "@/lib/utils/retry"
+import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 
 const MAX_RETRIES = 3
 const LOCK_CONFLICT_CODE = "55P03"
@@ -105,7 +106,6 @@ export async function createBookingSaga(
     // Step 2: Check slot availability (using DB EXCLUDE constraint as backup)
     console.log("[Saga] Step 2: Checking slot availability")
     const slotAvailable = await checkSlotAvailability(
-      supabase,
       context.startTime,
       context.endTime
     )
@@ -196,7 +196,9 @@ export async function createBookingSaga(
       }
     }
 
-    // Step 6: Add Calendar event (with retry)
+    // Step 6: Add Calendar event (non-blocking)
+    // カレンダー連携（OAuthトークン失効等）の障害で予約自体を失敗させない。
+    // 失敗時はログに残して予約は継続する（空き枠判定はDBの予約が正）
     console.log("[Saga] Step 6: Adding calendar event")
     try {
       // Get user profile for calendar event title
@@ -218,17 +220,11 @@ export async function createBookingSaga(
       context.googleEventId = calendarResult.google_event_id
       completedSteps.push("add_calendar")
     } catch (error) {
-      console.error("[Saga] Calendar event creation failed:", error)
-      // Compensate: delete Zoom, cancel booking, refund points
-      const calendarFailures = await compensateAll(supabase, context, completedSteps)
-      return {
-        success: false,
-        error: calendarFailures.length > 0
-          ? "カレンダー登録に失敗しました。一部のリソースのクリーンアップに失敗しました。管理者にお問い合わせください。"
-          : "カレンダー登録に失敗しました",
-        errorCode: BookingErrorCodes.INTERNAL_ERROR,
-        compensationFailures: calendarFailures.length > 0 ? calendarFailures : undefined,
-      }
+      console.error(
+        "[Saga] Calendar event creation failed (non-blocking, booking continues):",
+        error
+      )
+      context.googleEventId = undefined
     }
 
     // Step 7: Confirm booking (update with Zoom and Calendar info)
@@ -329,15 +325,17 @@ async function validateMenu(
 
 /**
  * Check if time slot is available
+ *
+ * RLSにより会員クライアントでは他人の予約が見えないため、
+ * service role クライアントで全予約を対象にチェックする
  */
 async function checkSlotAvailability(
-  supabase: SupabaseClient<Database>,
   startTime: string,
   endTime: string
 ): Promise<boolean> {
   // Check for overlapping confirmed bookings
   // DB has EXCLUDE constraint as backup, but we check here first for better UX
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseServiceRole()
     .from("bookings")
     .select("id")
     .neq("status", "canceled")
@@ -538,10 +536,21 @@ async function compensateBookingCancel(
 
   console.log("[Saga] Compensating: Canceling booking")
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from("bookings")
     .update({ status: "canceled" })
     .eq("id", context.bookingId)
+    .select("id")
+
+  if (error) {
+    throw error
+  }
+  // RLS等でUPDATEが0行に終わった場合はサイレント失敗させず補償失敗として扱う
+  if (!data || data.length === 0) {
+    throw new Error(
+      `Compensation cancel affected 0 rows (booking_id: ${context.bookingId})`
+    )
+  }
 }
 
 /**

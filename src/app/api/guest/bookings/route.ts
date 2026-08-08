@@ -108,6 +108,32 @@ export async function POST(request: Request) {
     const normalizedEmail = email.toLowerCase().trim()
     const trimmedName = name.trim()
 
+    // Step 0: DB上の予約重複を事前チェック
+    // Zoom/カレンダーなど外部リソースを作る前に弾く（最終防衛線はEXCLUDE制約）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: conflicting, error: conflictError } = await (supabase as any)
+      .from("bookings")
+      .select("id")
+      .neq("status", "canceled")
+      .lt("start_time", endTime)
+      .gt("end_time", startTime)
+      .limit(1) as { data: Array<{ id: number }> | null; error: { message: string } | null }
+
+    if (conflictError) {
+      console.error("[Guest Booking] Conflict pre-check failed:", conflictError)
+      return NextResponse.json(
+        { error: "予約状況の確認に失敗しました" },
+        { status: 500 }
+      )
+    }
+
+    if (conflicting && conflicting.length > 0) {
+      return NextResponse.json(
+        { error: "この時間帯は既に予約されています" },
+        { status: 409 }
+      )
+    }
+
     // Step 1: Create Zoom meeting
     console.log("[Guest Booking] Step 1: Creating Zoom meeting")
     try {
@@ -128,7 +154,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Step 2: Add Google Calendar event
+    // Step 2: Add Google Calendar event (non-blocking)
+    // カレンダー連携（OAuthトークン失効等）の障害で予約自体を失敗させない
     console.log("[Guest Booking] Step 2: Adding calendar event")
     try {
       const calendarResult = await addCalendarEvent({
@@ -142,15 +169,11 @@ export async function POST(request: Request) {
       googleEventId = calendarResult.google_event_id
       console.log("[Guest Booking] Calendar event created:", googleEventId)
     } catch (error) {
-      console.error("[Guest Booking] Calendar creation failed:", error)
-      // Cleanup Zoom
-      if (zoomMeetingId && !zoomMeetingId.startsWith("mock-")) {
-        await deleteZoomMeeting(zoomMeetingId, "B").catch(console.error)
-      }
-      return NextResponse.json(
-        { error: "カレンダー登録に失敗しました" },
-        { status: 500 }
+      console.error(
+        "[Guest Booking] Calendar creation failed (non-blocking, booking continues):",
+        error
       )
+      googleEventId = null
     }
 
     // Step 3: Create booking record

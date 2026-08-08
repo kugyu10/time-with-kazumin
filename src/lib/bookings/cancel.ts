@@ -16,6 +16,7 @@ import { deleteZoomMeeting as deleteZoomMeetingApi } from "@/lib/integrations/zo
 import { deleteCalendarEvent as deleteCalendarEventApi } from "@/lib/integrations/google-calendar"
 import { sendBookingCancellationEmail } from "@/lib/integrations/email"
 import { retryWithExponentialBackoff } from "@/lib/utils/retry"
+import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 
 export type CancelBookingResult = {
   success: boolean
@@ -198,14 +199,20 @@ export async function cancelBooking(
     }
 
     // 8. 予約ステータス更新（必須）
+    // 権限チェックは上記ステップ2で完了しているため、RLSによる
+    // サイレント0行更新を避けるべく service role で確実に更新する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
+    const { data: updatedRows, error: updateError } = await (getSupabaseServiceRole() as any)
       .from("bookings")
       .update({ status: "canceled" })
       .eq("id", bookingId)
+      .select("id") as { data: Array<{ id: number }> | null; error: Error | null }
 
-    if (updateError) {
-      console.error("[cancelBooking] Status update failed:", updateError)
+    if (updateError || !updatedRows || updatedRows.length === 0) {
+      console.error(
+        "[cancelBooking] Status update failed:",
+        updateError ?? `0 rows updated (booking_id: ${bookingId})`
+      )
       return {
         success: false,
         error: "予約ステータスの更新に失敗しました。",

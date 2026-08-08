@@ -7,23 +7,16 @@
  */
 
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-import type { Database } from "@/types/database"
+import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 import { getCachedZoomBusyTimes } from "@/lib/integrations/zoom"
 import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
 import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
-// 遅延初期化用のクライアント取得関数
+// RLSにより anon キーでは bookings が1件も見えず空き枠判定が常に「空き」になるため、
+// サーバー専用の service role クライアントで参照する（返すのは空き状況のみでPIIは含まない）
 function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing Supabase environment variables")
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey)
+  return getSupabaseServiceRole()
 }
 
 interface Slot {
@@ -147,8 +140,9 @@ export async function GET(request: Request) {
     }
 
     // 該当日の予約を取得（キャンセル以外）
-    const dayStart = `${date}T00:00:00`
-    const dayEnd = `${date}T23:59:59`
+    // タイムゾーンを明示しないとUTCとして解釈され、JSTの日境界とずれる
+    const dayStart = `${date}T00:00:00+09:00`
+    const dayEnd = `${date}T23:59:59+09:00`
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: bookings, error: bookingsError } = await (supabase as any)

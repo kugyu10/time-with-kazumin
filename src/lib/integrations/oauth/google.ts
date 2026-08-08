@@ -15,9 +15,9 @@ import {
 
 const GOOGLE_PROVIDER = "google"
 
-// 遅延初期化用のOAuth2クライアント
-let oauth2Client: Auth.OAuth2Client | null = null
-let isTokenListenerAttached = false
+// NOTE: OAuth2クライアントはリクエストごとに生成する。
+// グローバルキャッシュすると、再認証後もウォームなサーバーレスインスタンスが
+// 古い認証情報を持ち続ける（redirect_uri_mismatch デバッグ時の教訓）
 
 /**
  * Google OAuth認証に必要なスコープ
@@ -44,29 +44,24 @@ function getGoogleCredentials() {
 }
 
 /**
- * OAuth2クライアントを初期化（遅延初期化）
+ * OAuth2クライアントを生成（毎回新規作成）
  */
 function initOAuth2Client(): Auth.OAuth2Client | null {
-  if (oauth2Client) return oauth2Client
-
   const credentials = getGoogleCredentials()
   if (!credentials) return null
 
-  oauth2Client = new google.auth.OAuth2(
+  return new google.auth.OAuth2(
     credentials.clientId,
     credentials.clientSecret,
     credentials.redirectUri
   )
-
-  return oauth2Client
 }
 
 /**
  * トークン更新リスナーを設定
+ * クライアントは毎回新規生成されるため、クライアントごとに1回だけ設定される
  */
 function attachTokenListener(client: Auth.OAuth2Client) {
-  if (isTokenListenerAttached) return
-
   client.on("tokens", async (tokens) => {
     console.log("[GoogleOAuth] Token refresh detected")
 
@@ -82,8 +77,6 @@ function attachTokenListener(client: Auth.OAuth2Client) {
       console.error("[GoogleOAuth] Failed to save refreshed tokens:", error)
     }
   })
-
-  isTokenListenerAttached = true
 }
 
 /**
