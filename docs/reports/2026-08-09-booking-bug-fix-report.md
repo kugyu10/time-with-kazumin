@@ -62,8 +62,11 @@ zoom_meeting_id / google_event_id が null(=confirmステップに到達せず�
    - Vercel の `GOOGLE_REDIRECT_URI` が `https://time.kazumin0831.com/api/admin/oauth/google/callback`
      と一致し、Google Cloud Console の承認済みリダイレクトURIに登録済みかを確認。
 2. コミット `96e6dff` をレビューしてデプロイ(デプロイ後はカレンダーが死んでいても予約自体は通る)
-3. dev環境のスキーマドリフト解消: dev DB (`rvhivweztxowtjbivzhs`) に `20260303000001_add_break_time.sql`
-   以降が未適用(`weekly_schedules.break_start_time` が無く、devの空き枠APIは常に0件)
+3. ~~dev環境のスキーマドリフト解消~~ → **対応済み (2026-08-09)**: dev DB (`rvhivweztxowtjbivzhs`) に
+   未適用だった8本のマイグレーション(oauth_tokens〜point_overflow_notify)を適用し、
+   `schema_migrations` にも記録済み。devの空き枠APIが正常動作することを確認済み。
+   ※ `20260329000002_enable_all_cron_jobs.sql` のみ意図的にスキップ
+   (devにはvault secrets/edge functionsが未設定でcronジョブが失敗し続けるだけのため。本番専用)
 4. 任意: カレンダー登録失敗時の管理者通知(現状はログのみ)
 
 ## 関連ドキュメント
