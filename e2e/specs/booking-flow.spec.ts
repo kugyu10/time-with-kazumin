@@ -2,27 +2,44 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// ヘルパー: 今週の表示範囲内にある翌平日を YYYY-MM-DD 形式で返す
-// SlotPickerは今週月曜日から7日間を表示するため、その範囲内の日付を返す
+// ヘルパー: SlotPickerの表示範囲（今週の月曜から7日間）内にある平日を YYYY-MM-DD で返す
+//
+// 日付は必ずローカルタイムで整形する。SlotPickerは formatDateLocal（ローカル）で
+// 日付キーを組み立てるため、toISOString()（UTC）を使うとJSTの09:00前に1日ずれて
+// どの表示日にも一致しなくなる。
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function getNextWeekday(): string {
   const now = new Date()
   const dayOfWeek = now.getDay()
-  // 今週の月曜日を計算
+  // SlotPickerと同じ「今週の月曜日」
   const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
   const monday = new Date(now)
   monday.setDate(now.getDate() + diff)
-  // 今週の金曜日
+  monday.setHours(0, 0, 0, 0)
+
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+
+  // 今週の月〜金のうち、明日以降で最も早い日を選ぶ
+  for (let i = 0; i < 5; i++) {
+    const candidate = new Date(monday)
+    candidate.setDate(monday.getDate() + i)
+    if (candidate > today) {
+      return formatDateLocal(candidate)
+    }
+  }
+
+  // 金・土・日は未来の平日が今週内に無いため今週の金曜へフォールバックする
+  // （スロットAPIはモックしているため過去日でも表示・選択できる）
   const friday = new Date(monday)
   friday.setDate(monday.getDate() + 4)
-
-  // 明日が今週の範囲内（月〜日）であればそれを使う
-  const tomorrow = new Date(now)
-  tomorrow.setDate(now.getDate() + 1)
-  // 土日ならその週の金曜に戻す
-  if (tomorrow.getDay() === 0 || tomorrow.getDay() === 6) {
-    return friday.toISOString().slice(0, 10)
-  }
-  return tomorrow.toISOString().slice(0, 10)
+  return formatDateLocal(friday)
 }
 
 // ヘルパー: 指定日付のスロット3件を返す

@@ -26,6 +26,35 @@ export interface CalendarEventParams {
   start: string
   end: string
   description?: string
+  /**
+   * 呼び出し元が決める決定論的なイベントID（任意）。
+   * 指定するとinsertが冪等になり、リトライやレスポンスタイムアウト後の
+   * 再送で同じイベントが重複作成されるのを防ぐ。
+   * 未指定の場合はGoogle側が採番する（従来動作）。
+   */
+  eventId?: string
+}
+
+/**
+ * Google Calendar のイベントIDに使える文字は base32hex（a-v と 0-9）のみ、
+ * 長さは5〜1024文字。任意の文字列を安全なIDへ正規化する。
+ */
+export function buildCalendarEventId(seed: string): string {
+  const normalized = seed.toLowerCase().replace(/[^a-v0-9]/g, "")
+  // 5文字未満にならないようパディング
+  return normalized.padEnd(5, "0").slice(0, 1024)
+}
+
+/**
+ * イベントID重複（409 Conflict）かどうかを判定する。
+ * 決定論的IDを指定したinsertでは「既に作成済み」を意味する。
+ */
+function isDuplicateEventError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+  const code = (error as { code?: unknown }).code
+  const status = (error as { status?: unknown }).status
+  const responseStatus = (error as { response?: { status?: unknown } }).response?.status
+  return code === 409 || status === 409 || responseStatus === 409
 }
 
 export interface CalendarEventResult {
@@ -155,6 +184,8 @@ export async function addCalendarEvent(
       return calendar.events.insert({
         calendarId: GOOGLE_CALENDAR_ID,
         requestBody: {
+          // 指定時はinsertが冪等になる（重複時は409）
+          ...(params.eventId ? { id: params.eventId } : {}),
           summary: params.summary,
           description: params.description,
           start: {
@@ -181,6 +212,16 @@ export async function addCalendarEvent(
       google_event_id: eventId,
     }
   } catch (error) {
+    // 決定論的IDを指定していて409が返る場合、イベントは既にGoogle側に存在する。
+    // レスポンスのタイムアウトや切断で失敗扱いになった前回の試行が実際には
+    // 成功していたケースであり、ここでIDを返さないと削除できない孤児イベントになる。
+    if (params.eventId && isDuplicateEventError(error)) {
+      console.warn(
+        `[GoogleCalendar] Event already exists, reusing id: ${params.eventId}`
+      )
+      return { google_event_id: params.eventId }
+    }
+
     console.error("[GoogleCalendar] Failed to add event:", error)
     throw error
   }

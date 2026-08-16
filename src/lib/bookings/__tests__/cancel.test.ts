@@ -3,7 +3,9 @@
  *
  * テスト対象:
  * - 正常キャンセル（service role経由のstatus更新）
- * - UPDATEが0行に終わった場合のサイレント失敗検知
+ * - status確保(claim)が0行に終わった場合の同時実行検知
+ * - claimがポイント返還より前に行われること（二重返還の防止）
+ * - 返還失敗時のstatusロールバック
  * - 既にキャンセル済みの予約の拒否
  */
 
@@ -27,15 +29,30 @@ vi.mock("@/lib/utils/retry", () => ({
 }))
 
 // service role クライアントのモック（status更新に使用される）
+//
+// claim:  update({status:'canceled'}).eq('id').eq('status','confirmed').select('id')
+// revert: update({status:'confirmed'}).eq('id').eq('status','canceled')  ← selectなしでawait
+// の両方に応答できるよう、eq()を自己参照で返しつつthenableにしている。
 const serviceRoleSelectFn = vi.fn()
+const serviceRoleUpdateFn = vi.fn()
+const serviceRoleRevertResult = { error: null as Error | null }
+
 vi.mock("@/lib/supabase/service-role", () => ({
   getSupabaseServiceRole: vi.fn(() => ({
     from: vi.fn().mockReturnValue({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      update: (values: any) => {
+        serviceRoleUpdateFn(values)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const chain: any = {
+          eq: () => chain,
           select: serviceRoleSelectFn,
-        }),
-      }),
+          // selectを呼ばずにawaitされた場合（revert）
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          then: (resolve: any) => Promise.resolve(serviceRoleRevertResult).then(resolve),
+        }
+        return chain
+      },
     }),
   })),
 }))
@@ -111,8 +128,25 @@ describe("cancelBooking()", () => {
     expect(result.success).toBe(true)
   })
 
-  it("Test 2: UPDATEが0行だった場合はstatus_update_failedを返す（サイレント失敗の検知）", async () => {
+  it("Test 2: claimが0行なら同時実行負けとしてalready_canceledを返し、ポイントを返還しない", async () => {
+    // 他のリクエストが先にキャンセルし status='confirmed' の行が無い状態
     serviceRoleSelectFn.mockResolvedValue({ data: [], error: null })
+    const supabase = createMockSupabase(
+      createBookingRow({
+        meeting_menus: { name: "テストメニュー", points_required: 10, zoom_account: null },
+      })
+    )
+
+    const result = await cancelBooking(42, supabase, USER_ID)
+
+    expect(result.success).toBe(false)
+    expect(result.error_code).toBe("already_canceled")
+    // 二重返還の防止: claimに負けたリクエストはrefund_pointsを呼ばない
+    expect(supabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it("Test 3: claimがエラーの場合はstatus_update_failedを返す", async () => {
+    serviceRoleSelectFn.mockResolvedValue({ data: null, error: new Error("db error") })
     const supabase = createMockSupabase(createBookingRow())
 
     const result = await cancelBooking(42, supabase, USER_ID)
@@ -121,14 +155,39 @@ describe("cancelBooking()", () => {
     expect(result.error_code).toBe("status_update_failed")
   })
 
-  it("Test 3: UPDATEがエラーの場合はstatus_update_failedを返す", async () => {
-    serviceRoleSelectFn.mockResolvedValue({ data: null, error: new Error("db error") })
-    const supabase = createMockSupabase(createBookingRow())
+  it("Test 3-1: ポイント返還はclaim成功後に1回だけ実行される", async () => {
+    serviceRoleSelectFn.mockResolvedValue({ data: [{ id: 42 }], error: null })
+    const supabase = createMockSupabase(
+      createBookingRow({
+        meeting_menus: { name: "テストメニュー", points_required: 10, zoom_account: null },
+      })
+    )
+
+    const result = await cancelBooking(42, supabase, USER_ID)
+
+    expect(result.success).toBe(true)
+    expect(result.refunded_points).toBe(10)
+    expect(supabase.rpc).toHaveBeenCalledTimes(1)
+    // 最初のUPDATEはcanceledへのclaim（返還より前に実行される）
+    expect(serviceRoleUpdateFn.mock.calls[0][0]).toEqual({ status: "canceled" })
+  })
+
+  it("Test 3-2: 返還に失敗した場合はstatusをconfirmedに戻す", async () => {
+    serviceRoleSelectFn.mockResolvedValue({ data: [{ id: 42 }], error: null })
+    const supabase = createMockSupabase(
+      createBookingRow({
+        meeting_menus: { name: "テストメニュー", points_required: 10, zoom_account: null },
+      })
+    )
+    supabase.rpc = vi.fn().mockResolvedValue({ data: null, error: new Error("refund failed") })
 
     const result = await cancelBooking(42, supabase, USER_ID)
 
     expect(result.success).toBe(false)
-    expect(result.error_code).toBe("status_update_failed")
+    expect(result.error_code).toBe("refund_failed")
+    // claim → revert の2回のUPDATEが走る
+    expect(serviceRoleUpdateFn).toHaveBeenCalledTimes(2)
+    expect(serviceRoleUpdateFn.mock.calls[1][0]).toEqual({ status: "confirmed" })
   })
 
   it("Test 4: 既にキャンセル済みの予約はalready_canceledで拒否", async () => {

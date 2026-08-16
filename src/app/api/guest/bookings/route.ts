@@ -13,7 +13,11 @@ import { validateGuestBooking } from "@/lib/validation/guest"
 import { generateCancelToken } from "@/lib/tokens/cancel-token"
 import { randomUUID } from "crypto"
 import { createZoomMeeting, deleteZoomMeeting } from "@/lib/integrations/zoom"
-import { addCalendarEvent, deleteCalendarEvent } from "@/lib/integrations/google-calendar"
+import {
+  addCalendarEvent,
+  deleteCalendarEvent,
+  buildCalendarEventId,
+} from "@/lib/integrations/google-calendar"
 import { sendBookingConfirmationEmail } from "@/lib/integrations/email"
 
 // 発光ポジティブちょい浴び30分のメニューID（固定）
@@ -64,7 +68,7 @@ export async function POST(request: Request) {
 
     // リクエストボディの解析
     const body = await request.json()
-    const { email, name, slotDate, startTime, endTime } = body as {
+    const { email, name, slotDate, startTime, endTime: requestedEndTime } = body as {
       email?: string
       name?: string
       slotDate?: string
@@ -73,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     // 基本的な必須フィールドチェック
-    if (!email || !name || !slotDate || !startTime || !endTime) {
+    if (!email || !name || !slotDate || !startTime || !requestedEndTime) {
       return NextResponse.json(
         { error: "必須パラメータが不足しています" },
         { status: 400 }
@@ -96,11 +100,31 @@ export async function POST(request: Request) {
     }
 
     // バリデーション
-    const validation = await validateGuestBooking({ email, name, slotDate, startTime, endTime })
+    const validation = await validateGuestBooking({
+      email,
+      name,
+      slotDate,
+      startTime,
+      endTime: requestedEndTime,
+    })
     if (!validation.valid) {
       return NextResponse.json(
         { error: validation.errors.join(", ") },
         { status: 400 }
+      )
+    }
+
+    // 予約の終了時刻はクライアント値を信用せずサーバ側で確定させる。
+    // endTime をそのまま通すと start + 30日 のような長大予約を未認証で作成でき、
+    // no_overlapping_bookings EXCLUDE 制約が以降の全予約を弾くDoSになる。
+    const endTime = new Date(
+      new Date(startTime).getTime() + CASUAL_30_DURATION * 60 * 1000
+    ).toISOString()
+
+    if (new Date(requestedEndTime).getTime() !== new Date(endTime).getTime()) {
+      console.warn(
+        `[Guest Booking] endTime mismatch, clamped to ${CASUAL_30_DURATION}min:`,
+        { requested: requestedEndTime, applied: endTime }
       )
     }
 
@@ -158,7 +182,11 @@ export async function POST(request: Request) {
     // カレンダー連携（OAuthトークン失効等）の障害で予約自体を失敗させない
     console.log("[Guest Booking] Step 2: Adding calendar event")
     try {
+      // リクエスト単位の決定論的イベントIDでinsertを冪等にする。
+      // addCalendarEvent内部のリトライがレスポンスタイムアウト後に再送しても
+      // 重複イベントは作られず、409時は既存IDが返るため孤児イベントにならない。
       const calendarResult = await addCalendarEvent({
+        eventId: buildCalendarEventId(`guest${randomUUID().replace(/-/g, "")}`),
         summary: `${CASUAL_30_NAME} - ${trimmedName}`,
         start: startTime,
         end: endTime,
@@ -170,7 +198,8 @@ export async function POST(request: Request) {
       console.log("[Guest Booking] Calendar event created:", googleEventId)
     } catch (error) {
       console.error(
-        "[Guest Booking] Calendar creation failed (non-blocking, booking continues):",
+        "[Guest Booking] CALENDAR_SYNC_FAILED (non-blocking, booking continues). " +
+          "OAuthトークン失効の可能性あり:",
         error
       )
       googleEventId = null

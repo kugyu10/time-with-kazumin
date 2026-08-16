@@ -17,7 +17,11 @@ import {
   BookingErrorCodes,
 } from "./types"
 import { createZoomMeeting, deleteZoomMeeting, getZoomScheduledMeetings } from "../integrations/zoom"
-import { addCalendarEvent, deleteCalendarEvent } from "../integrations/google-calendar"
+import {
+  addCalendarEvent,
+  deleteCalendarEvent,
+  buildCalendarEventId,
+} from "../integrations/google-calendar"
 import { sendBookingConfirmationEmail } from "../integrations/email"
 import { generateCancelToken } from "../tokens/cancel-token"
 import { retryWithExponentialBackoff } from "@/lib/utils/retry"
@@ -86,6 +90,9 @@ export async function createBookingSaga(
 
   // Track completed steps for compensation
   const completedSteps: string[] = []
+  // カレンダー同期の失敗を呼び出し元へ伝えるフラグ。
+  // OAuthトークン失効のような継続的な障害がログ以外に現れず見逃されるのを防ぐ。
+  let calendarSyncFailed = false
 
   try {
     // Step 1: Validate menu and get points required
@@ -205,18 +212,19 @@ export async function createBookingSaga(
       const profile = await getProfileData(supabase, userId)
       const userName = profile?.full_name || "会員"
 
-      const calendarResult = await retryWithExponentialBackoff(
-        () =>
-          addCalendarEvent({
-            summary: `${context.menuName} - ${userName}`,
-            start: context.startTime,
-            end: context.endTime,
-            description: context.zoomJoinUrl
-              ? `Zoom: ${context.zoomJoinUrl}`
-              : undefined,
-          }),
-        { maxRetries: 3 }
-      )
+      // 予約IDから決定論的なイベントIDを作る。
+      // addCalendarEvent内部で既にリトライしており、二重にラップすると
+      // レスポンスタイムアウト時に重複イベントが最大4件作られる。
+      // 決定論的IDならリトライしても同一イベントに収束する（重複時は409→ID再利用）。
+      const calendarResult = await addCalendarEvent({
+        eventId: buildCalendarEventId(`booking${context.bookingId}`),
+        summary: `${context.menuName} - ${userName}`,
+        start: context.startTime,
+        end: context.endTime,
+        description: context.zoomJoinUrl
+          ? `Zoom: ${context.zoomJoinUrl}`
+          : undefined,
+      })
       context.googleEventId = calendarResult.google_event_id
       completedSteps.push("add_calendar")
     } catch (error) {
@@ -225,6 +233,7 @@ export async function createBookingSaga(
         error
       )
       context.googleEventId = undefined
+      calendarSyncFailed = true
     }
 
     // Step 7: Confirm booking (update with Zoom and Calendar info)
@@ -287,6 +296,7 @@ export async function createBookingSaga(
         status: "confirmed",
         zoom_join_url: context.zoomJoinUrl,
       },
+      calendarSyncFailed: calendarSyncFailed || undefined,
     }
   } catch (error) {
     console.error("[Saga] Unexpected error:", error)
