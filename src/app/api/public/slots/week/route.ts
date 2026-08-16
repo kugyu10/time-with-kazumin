@@ -122,18 +122,33 @@ export async function GET(request: Request) {
     // 祝日スケジュールが見つからない場合はnullを許容
     const holidayScheduleData = holidayError ? null : holidaySchedule
 
+    // バッファ設定（予約取得の範囲計算に必要なので先に読む）
+    const bufferBeforeMinutes = await getBufferBeforeMinutes()
+    const bufferAfterMinutes = await getBufferAfterMinutes()
+    const bufferBeforeMs = bufferBeforeMinutes * 60 * 1000
+    const bufferAfterMs = bufferAfterMinutes * 60 * 1000
+
     // 週間の予約を取得
     // タイムゾーンを明示しないとUTCとして解釈され、JSTの日境界とずれる
     const weekStart = `${dates[0]}T00:00:00+09:00`
-    const weekEnd = `${dates[6]}T23:59:59+09:00`
+    // 終端は最終日の翌0時の「未満」で表現する。23:59:59だと1秒の隙間ができる。
+    const weekEndExclusive = new Date(
+      new Date(`${dates[6]}T00:00:00+09:00`).getTime() + 24 * 60 * 60 * 1000
+    ).toISOString()
 
+    // 週の前後の予約でもバッファ込みで週内のスロットを塞ぐことがあるため広げる
+    const fetchStart = new Date(new Date(weekStart).getTime() - bufferAfterMs).toISOString()
+    const fetchEnd = new Date(new Date(weekEndExclusive).getTime() + bufferBeforeMs).toISOString()
+
+    // 包含（gte start / lte end）ではなく重なり条件で取得する。
+    // 包含だと日をまたぐ予約が丸ごと抜け落ち、その枠がavailable扱いになる。
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: bookings, error: bookingsError } = await (supabase as any)
       .from("bookings")
       .select("start_time, end_time, status")
       .neq("status", "canceled")
-      .gte("start_time", weekStart)
-      .lte("end_time", weekEnd) as {
+      .lt("start_time", fetchEnd)
+      .gt("end_time", fetchStart) as {
         data: Array<{ start_time: string; end_time: string; status: string }> | null
         error: { message: string } | null
       }
@@ -174,14 +189,8 @@ export async function GET(request: Request) {
 
     console.log(`[GET /api/public/slots/week] Total busy times after Zoom merge: ${busyTimes.length}`)
 
-    // 設定取得（パラメータ指定がなければDB設定を使用）
+    // 設定取得（パラメータ指定がなければDB設定を使用、バッファは読み込み済み）
     const bookingMinHoursAhead = customMinHoursAhead ?? await getBookingMinHoursAhead()
-    const bufferBeforeMinutes = await getBufferBeforeMinutes()
-    const bufferAfterMinutes = await getBufferAfterMinutes()
-
-    // バッファをミリ秒に変換
-    const bufferBeforeMs = bufferBeforeMinutes * 60 * 1000
-    const bufferAfterMs = bufferAfterMinutes * 60 * 1000
 
     // 各日のスロットを生成
     const result: Record<string, Slot[]> = {}
