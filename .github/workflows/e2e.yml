@@ -22,6 +22,9 @@ jobs:
           # 本番ドメイン(time.kazumin0831.com)を持つプロジェクト側に固定する。
           # 区切り文字は半角ハイフンではなく en dash (U+2013)。
           environment: 'Preview – time-with-kazumin'
+          # プレビューは Vercel Authentication が有効で認証なしだと401になる。
+          # Protection Bypass for Automation のシークレットで通過する。
+          vercel_protection_bypass_header: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           max_timeout: 300
 
   e2e:
@@ -47,6 +50,7 @@ jobs:
       - name: Run E2E tests
         env:
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.preview-url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_DEV_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_DEV_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_DEV_SERVICE_ROLE_KEY }}
