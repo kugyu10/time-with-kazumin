@@ -16,6 +16,12 @@ jobs:
         uses: patrickedqvist/wait-for-vercel-preview@v1.3.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # このリポジトリには Vercel プロジェクトが2つ接続されており、
+          # 1つのコミットに対して Deployment status が2件作成される。
+          # environment を指定しないとどちらを待つかが不定になるため、
+          # 本番ドメイン(time.kazumin0831.com)を持つプロジェクト側に固定する。
+          # 区切り文字は半角ハイフンではなく en dash (U+2013)。
+          environment: 'Preview – time-with-kazumin'
           max_timeout: 300
 
   e2e:
