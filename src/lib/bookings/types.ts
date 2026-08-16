@@ -55,6 +55,11 @@ export interface BookingSagaResult {
   error?: string
   errorCode?: string
   compensationFailures?: CompensationFailure[]
+  /**
+   * 予約自体は成立したが Google カレンダー同期に失敗したことを示す。
+   * OAuthトークン失効などの継続的な障害を検知するためのシグナル。
+   */
+  calendarSyncFailed?: boolean
 }
 
 // Error codes for client handling

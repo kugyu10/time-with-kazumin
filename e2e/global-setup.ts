@@ -17,7 +17,7 @@ export default async function globalSetup() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // 会員テストユーザー作成
+  // 会員テストユーザー作成（既存なら取得）
   const { data: memberData } = await supabase.auth.admin.createUser({
     email: process.env.E2E_MEMBER_EMAIL!,
     password: process.env.E2E_MEMBER_PASSWORD!,
@@ -25,14 +25,25 @@ export default async function globalSetup() {
     user_metadata: { name: 'E2E Test Member' },
   })
 
+  let memberUserId = memberData?.user?.id
+  if (!memberUserId) {
+    // 既存ユーザーの場合はIDを取得
+    const { data: users } = await supabase.auth.admin.listUsers()
+    const existing = users?.users?.find(u => u.email === process.env.E2E_MEMBER_EMAIL!)
+    memberUserId = existing?.id
+  }
+
   // 会員の profiles レコードを作成（RLS対象外のservice_roleで直接INSERT）
-  if (memberData?.user) {
-    await supabase.from('profiles').upsert({
-      id: memberData.user.id,
+  if (memberUserId) {
+    const { error: profileError } = await supabase.from('profiles').upsert({
+      id: memberUserId,
       email: process.env.E2E_MEMBER_EMAIL!,
-      name: 'E2E Test Member',
+      full_name: 'E2E Test Member',
       role: 'member',
     })
+    if (profileError) {
+      console.warn('[global-setup] profiles upsert error (member):', profileError.message)
+    }
 
     // member_plans 挿入
     const { data: activePlan } = await supabase
@@ -44,7 +55,7 @@ export default async function globalSetup() {
 
     if (activePlan) {
       await supabase.from('member_plans').upsert({
-        user_id: memberData.user.id,
+        user_id: memberUserId,
         plan_id: activePlan.id,
         status: 'active',
         current_points: 100,
@@ -55,16 +66,25 @@ export default async function globalSetup() {
     }
   }
 
-  // weekly_schedules 存在確認
+  // weekly_schedules 存在確認・投入（月〜金 9:00-17:00）
   const { count: scheduleCount } = await supabase
     .from('weekly_schedules')
     .select('*', { count: 'exact', head: true })
-
-  if (scheduleCount === 0) {
-    console.warn('[global-setup] weekly_schedules が空です。スロット表示テストが失敗する可能性があります')
+  if (!scheduleCount) {
+    const schedules = [1, 2, 3, 4, 5].map(day => ({
+      day_of_week: day,
+      start_time: '09:00',
+      end_time: '17:00',
+    }))
+    const { error: scheduleError } = await supabase
+      .from('weekly_schedules')
+      .insert(schedules)
+    if (scheduleError) {
+      console.warn('[global-setup] weekly_schedules 投入失敗:', scheduleError.message)
+    }
   }
 
-  // 管理者テストユーザー作成
+  // 管理者テストユーザー作成（既存なら取得）
   const { data: adminData } = await supabase.auth.admin.createUser({
     email: process.env.E2E_ADMIN_EMAIL!,
     password: process.env.E2E_ADMIN_PASSWORD!,
@@ -72,14 +92,24 @@ export default async function globalSetup() {
     user_metadata: { name: 'E2E Test Admin' },
   })
 
+  let adminUserId = adminData?.user?.id
+  if (!adminUserId) {
+    const { data: users } = await supabase.auth.admin.listUsers()
+    const existing = users?.users?.find(u => u.email === process.env.E2E_ADMIN_EMAIL!)
+    adminUserId = existing?.id
+  }
+
   // 管理者の profiles レコードを作成（role: 'admin' を設定）
-  if (adminData?.user) {
-    await supabase.from('profiles').upsert({
-      id: adminData.user.id,
+  if (adminUserId) {
+    const { error: adminProfileError } = await supabase.from('profiles').upsert({
+      id: adminUserId,
       email: process.env.E2E_ADMIN_EMAIL!,
-      name: 'E2E Test Admin',
+      full_name: 'E2E Test Admin',
       role: 'admin',
     })
+    if (adminProfileError) {
+      console.warn('[global-setup] profiles upsert error (admin):', adminProfileError.message)
+    }
   }
 
   // ゲスト予約テスト用 booking レコード挿入
@@ -121,7 +151,6 @@ export default async function globalSetup() {
         status: 'confirmed',
         zoom_join_url: 'https://zoom.us/j/e2e-mock-meeting-12345',
         menu_id: activeMenu.id,
-        booking_type: 'guest',
       })
       .eq('guest_token', 'e2e-test-guest-token')
     bookingId = existingBooking.id
@@ -137,7 +166,6 @@ export default async function globalSetup() {
         status: 'confirmed',
         zoom_join_url: 'https://zoom.us/j/e2e-mock-meeting-12345',
         menu_id: activeMenu.id,
-        booking_type: 'guest',
       })
       .select('id')
       .single()

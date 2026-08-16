@@ -41,11 +41,15 @@ import { _compensateAllForTest } from "../saga"
 // モック Supabase クライアント
 function createMockSupabase(options: {
   rpcResult?: { error: null | Error }
-  updateResult?: { error: null | Error }
+  updateResult?: { data: Array<{ id: number }> | null; error: null | Error }
 } = {}) {
   const rpcFn = vi.fn().mockResolvedValue(options.rpcResult ?? { error: null })
+  // update().eq().select() チェーン（0行更新検知のためselectで終端）
+  const selectFn = vi.fn().mockResolvedValue(
+    options.updateResult ?? { data: [{ id: 42 }], error: null }
+  )
   const updateFn = vi.fn().mockReturnValue({
-    eq: vi.fn().mockResolvedValue(options.updateResult ?? { error: null }),
+    eq: vi.fn().mockReturnValue({ select: selectFn }),
   })
 
   return {

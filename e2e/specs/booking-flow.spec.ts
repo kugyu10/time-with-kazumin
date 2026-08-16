@@ -2,14 +2,44 @@ import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// ヘルパー: 2日後の平日を YYYY-MM-DD 形式で返す
+// ヘルパー: SlotPickerの表示範囲（今週の月曜から7日間）内にある平日を YYYY-MM-DD で返す
+//
+// 日付は必ずローカルタイムで整形する。SlotPickerは formatDateLocal（ローカル）で
+// 日付キーを組み立てるため、toISOString()（UTC）を使うとJSTの09:00前に1日ずれて
+// どの表示日にも一致しなくなる。
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function getNextWeekday(): string {
-  const date = new Date()
-  date.setDate(date.getDate() + 2)
-  // 土日の場合は月曜日にずらす
-  if (date.getDay() === 0) date.setDate(date.getDate() + 1)
-  if (date.getDay() === 6) date.setDate(date.getDate() + 2)
-  return date.toISOString().slice(0, 10)
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  // SlotPickerと同じ「今週の月曜日」
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+  monday.setHours(0, 0, 0, 0)
+
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+
+  // 今週の月〜金のうち、明日以降で最も早い日を選ぶ
+  for (let i = 0; i < 5; i++) {
+    const candidate = new Date(monday)
+    candidate.setDate(monday.getDate() + i)
+    if (candidate > today) {
+      return formatDateLocal(candidate)
+    }
+  }
+
+  // 金・土・日は未来の平日が今週内に無いため今週の金曜へフォールバックする
+  // （スロットAPIはモックしているため過去日でも表示・選択できる）
+  const friday = new Date(monday)
+  friday.setDate(monday.getDate() + 4)
+  return formatDateLocal(friday)
 }
 
 // ヘルパー: 指定日付のスロット3件を返す
@@ -164,7 +194,7 @@ test.describe('ゲストキャンセルフロー', () => {
     await page.getByRole('button', { name: '予約をキャンセル' }).click()
 
     // AlertDialog が表示されること
-    await expect(page.getByText('予約をキャンセルしますか?')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '予約をキャンセルしますか?' })).toBeVisible()
 
     // 「キャンセルする」をクリック
     await page.getByRole('button', { name: 'キャンセルする' }).click()

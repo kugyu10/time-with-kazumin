@@ -7,23 +7,16 @@
  */
 
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-import type { Database } from "@/types/database"
+import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 import { getCachedZoomBusyTimes } from "@/lib/integrations/zoom"
 import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
 import { isJapaneseHoliday } from "@/lib/utils/holidays"
 
-// 遅延初期化用のクライアント取得関数
+// RLSにより anon キーでは bookings が1件も見えず空き枠判定が常に「空き」になるため、
+// サーバー専用の service role クライアントで参照する（返すのは空き状況のみでPIIは含まない）
 function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing Supabase environment variables")
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseAnonKey)
+  return getSupabaseServiceRole()
 }
 
 interface Slot {
@@ -146,17 +139,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ slots: [] })
     }
 
-    // 該当日の予約を取得（キャンセル以外）
-    const dayStart = `${date}T00:00:00`
-    const dayEnd = `${date}T23:59:59`
+    // バッファ設定（予約取得の範囲計算に必要なので先に読む）
+    const bufferBeforeMinutes = await getBufferBeforeMinutes()
+    const bufferAfterMinutes = await getBufferAfterMinutes()
+    const bufferBeforeMs = bufferBeforeMinutes * 60 * 1000
+    const bufferAfterMs = bufferAfterMinutes * 60 * 1000
 
+    // 該当日の予約を取得（キャンセル以外）
+    // タイムゾーンを明示しないとUTCとして解釈され、JSTの日境界とずれる
+    const dayStart = `${date}T00:00:00+09:00`
+    // 終端は翌日0時の「未満」で表現する。23:59:59だと1秒の隙間ができる。
+    const dayEndExclusive = new Date(
+      new Date(dayStart).getTime() + 24 * 60 * 60 * 1000
+    ).toISOString()
+
+    // 前後日の予約でもバッファ込みで当日のスロットを塞ぐことがあるため、
+    // 取得範囲をバッファ分だけ広げる
+    const fetchStart = new Date(new Date(dayStart).getTime() - bufferAfterMs).toISOString()
+    const fetchEnd = new Date(new Date(dayEndExclusive).getTime() + bufferBeforeMs).toISOString()
+
+    // 包含（gte start / lte end）ではなく重なり条件で取得する。
+    // 包含だと日をまたぐ予約が丸ごと抜け落ち、その枠がavailable扱いになる。
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: bookings, error: bookingsError } = await (supabase as any)
       .from("bookings")
       .select("start_time, end_time, status")
       .neq("status", "canceled")
-      .gte("start_time", dayStart)
-      .lte("end_time", dayEnd) as {
+      .lt("start_time", fetchEnd)
+      .gt("end_time", fetchStart) as {
         data: Array<{ start_time: string; end_time: string; status: string }> | null
         error: { message: string } | null
       }
@@ -209,14 +219,8 @@ export async function GET(request: Request) {
     const slots: Slot[] = []
     const durationMinutes = 30 // 発光ポジティブちょい浴び30分固定
 
-    // DB設定から予約可能時間とバッファを取得
+    // DB設定から予約可能時間を取得（バッファは予約取得前に読み込み済み）
     const bookingMinHoursAhead = await getBookingMinHoursAhead()
-    const bufferBeforeMinutes = await getBufferBeforeMinutes()
-    const bufferAfterMinutes = await getBufferAfterMinutes()
-
-    // バッファをミリ秒に変換
-    const bufferBeforeMs = bufferBeforeMinutes * 60 * 1000
-    const bufferAfterMs = bufferAfterMinutes * 60 * 1000
 
     const [startHour, startMin] = activeSchedule.start_time.split(":").map(Number)
     const [endHour, endMin] = activeSchedule.end_time.split(":").map(Number)

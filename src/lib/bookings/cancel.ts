@@ -16,6 +16,7 @@ import { deleteZoomMeeting as deleteZoomMeetingApi } from "@/lib/integrations/zo
 import { deleteCalendarEvent as deleteCalendarEventApi } from "@/lib/integrations/google-calendar"
 import { sendBookingCancellationEmail } from "@/lib/integrations/email"
 import { retryWithExponentialBackoff } from "@/lib/utils/retry"
+import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 
 export type CancelBookingResult = {
   success: boolean
@@ -65,11 +66,15 @@ export interface CancelBookingOptions {
  * Processing order:
  * 1. Fetch booking data
  * 2. Validate permissions and status
- * 3. Refund points (members only)
- * 4. Delete Zoom meeting (non-blocking)
- * 5. Delete Calendar event (non-blocking)
- * 6. Update booking status to 'canceled'
+ * 3. Claim the cancellation (guarded status update to 'canceled')
+ * 4. Refund points (members only) - reverts the claim on failure
+ * 5. Delete Zoom meeting (non-blocking)
+ * 6. Delete Calendar event (non-blocking)
  * 7. Send cancellation email (non-blocking)
+ *
+ * The status update happens BEFORE the refund on purpose: it is the
+ * concurrency guard. Only the request that flips 'confirmed' -> 'canceled'
+ * proceeds to refund, so a double-click or client retry cannot refund twice.
  */
 export async function cancelBooking(
   bookingId: number,
@@ -142,7 +147,38 @@ export async function cancelBooking(
       return { success: false, error: "過去の予約はキャンセルできません", error_code: "past_booking" }
     }
 
-    // 5. ポイント返還（会員のみ、ゲスト予約はポイント消費なし）
+    // 5. キャンセル権の獲得（ステータス更新）
+    // ポイント返還より先に status を確定させることで同時キャンセルの二重返還を防ぐ。
+    // status='confirmed' の行を更新できた1リクエストだけが以降の処理に進む。
+    // 権限チェックはステップ2で完了済みのため、RLSによるサイレント0行更新を
+    // 避けるべく service role で更新する。
+    const serviceRole = getSupabaseServiceRole()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: claimedRows, error: claimError } = await (serviceRole as any)
+      .from("bookings")
+      .update({ status: "canceled" })
+      .eq("id", bookingId)
+      .eq("status", "confirmed")
+      .select("id") as { data: Array<{ id: number }> | null; error: Error | null }
+
+    if (claimError) {
+      console.error("[cancelBooking] Status update failed:", claimError)
+      return {
+        success: false,
+        error: "予約ステータスの更新に失敗しました。",
+        error_code: "status_update_failed"
+      }
+    }
+
+    if (!claimedRows || claimedRows.length === 0) {
+      // ステップ3の読み取り後に他リクエストが先にキャンセルした場合
+      console.warn(
+        `[cancelBooking] Lost the cancellation race, already canceled (booking_id: ${bookingId})`
+      )
+      return { success: false, error: "この予約は既にキャンセル済みです", error_code: "already_canceled" }
+    }
+
+    // 6. ポイント返還（会員のみ、ゲスト予約はポイント消費なし）
     const menuInfo = booking.meeting_menus
     const pointsToRefund = menuInfo?.points_required ?? 0
     let refundedPoints = 0
@@ -159,6 +195,18 @@ export async function cancelBooking(
 
       if (refundError) {
         console.error("[cancelBooking] Point refund failed:", refundError)
+        // 外部リソースはまだ削除していないため、ステータスを戻して失敗を返す
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: revertError } = await (serviceRole as any)
+          .from("bookings")
+          .update({ status: "confirmed" })
+          .eq("id", bookingId)
+          .eq("status", "canceled") as { error: Error | null }
+
+        if (revertError) {
+          console.error("[cancelBooking] Failed to revert status after refund failure:", revertError)
+        }
+
         return { success: false, error: "ポイント返還に失敗しました", error_code: "refund_failed" }
       }
 
@@ -168,7 +216,7 @@ export async function cancelBooking(
 
     const cleanupFailures: string[] = []
 
-    // 6. Zoom会議削除（非ブロッキング - 失敗してもキャンセルは続行）
+    // 7. Zoom会議削除（非ブロッキング - 失敗してもキャンセルは続行）
     if (booking.zoom_meeting_id) {
       try {
         const zoomAccountType = (booking.meeting_menus?.zoom_account as "A" | "B") || "A"
@@ -183,7 +231,7 @@ export async function cancelBooking(
       }
     }
 
-    // 7. Googleカレンダーイベント削除（非ブロッキング）
+    // 8. Googleカレンダーイベント削除（非ブロッキング）
     if (booking.google_event_id) {
       try {
         await retryWithExponentialBackoff(
@@ -194,23 +242,6 @@ export async function cancelBooking(
       } catch (error) {
         console.warn("[cancelBooking] Calendar deletion failed (non-blocking):", error)
         cleanupFailures.push("calendar_delete")
-      }
-    }
-
-    // 8. 予約ステータス更新（必須）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
-      .from("bookings")
-      .update({ status: "canceled" })
-      .eq("id", bookingId)
-
-    if (updateError) {
-      console.error("[cancelBooking] Status update failed:", updateError)
-      return {
-        success: false,
-        error: "予約ステータスの更新に失敗しました。",
-        error_code: "status_update_failed",
-        refunded_points: refundedPoints
       }
     }
 
