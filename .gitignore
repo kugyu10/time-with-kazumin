@@ -30,6 +30,7 @@ npm-debug.log*
 
 # Agent logs
 .claude/agent_logs/
+.claude/worktrees/
 
 # Supabase
 supabase/.branches
