@@ -22,6 +22,7 @@ import {
   deleteCalendarEvent,
   buildCalendarEventId,
 } from "../integrations/google-calendar"
+import { validateBookingSlot } from "./schedule"
 import { sendBookingConfirmationEmail } from "../integrations/email"
 import { generateCancelToken } from "../tokens/cancel-token"
 import { retryWithExponentialBackoff } from "@/lib/utils/retry"
@@ -109,6 +110,42 @@ export async function createBookingSaga(
     context.menuDuration = menu.duration_minutes
     context.pointsRequired = menu.points_required
     completedSteps.push("validate_menu")
+
+    // Step 1.5: 予約枠の妥当性検証（副作用の発生前なので補償は不要）
+    //
+    // end_time はクライアント値を信用せずメニューの duration から確定させる。
+    // そのまま通すと end=start+30日 のような予約でEXCLUDE制約が以降の全予約を
+    // 弾く。あわせて営業時間・休憩時間・スロット境界・最短予約時間も検証する。
+    // 以降のステップは request.end_time ではなく context.endTime を使う。
+    context.endTime = new Date(
+      new Date(context.startTime).getTime() + menu.duration_minutes * 60 * 1000
+    ).toISOString()
+
+    if (new Date(request.end_time).getTime() !== new Date(context.endTime).getTime()) {
+      console.warn("[Saga] end_time mismatch, using menu duration:", {
+        requested: request.end_time,
+        applied: context.endTime,
+        durationMinutes: menu.duration_minutes,
+      })
+    }
+
+    console.log("[Saga] Step 1.5: Validating booking slot")
+    const slotCheck = await validateBookingSlot({
+      startTime: context.startTime,
+      endTime: context.endTime,
+      durationMinutes: menu.duration_minutes,
+    })
+    if (!slotCheck.valid) {
+      console.warn("[Saga] Slot validation failed:", {
+        startTime: context.startTime,
+        code: slotCheck.code,
+      })
+      return {
+        success: false,
+        error: slotCheck.errors.join(", "),
+        errorCode: BookingErrorCodes.INVALID_SLOT,
+      }
+    }
 
     // Step 2: Check slot availability (using DB EXCLUDE constraint as backup)
     console.log("[Saga] Step 2: Checking slot availability")

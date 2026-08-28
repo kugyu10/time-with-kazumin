@@ -10,6 +10,7 @@ import { NextResponse } from "next/server"
 import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { checkGuestRateLimit } from "@/lib/rate-limit/guest-limiter"
 import { validateGuestBooking } from "@/lib/validation/guest"
+import { validateBookingSlot } from "@/lib/bookings/schedule"
 import { generateCancelToken } from "@/lib/tokens/cancel-token"
 import { randomUUID } from "crypto"
 import { createZoomMeeting, deleteZoomMeeting } from "@/lib/integrations/zoom"
@@ -125,6 +126,25 @@ export async function POST(request: Request) {
       console.warn(
         `[Guest Booking] endTime mismatch, clamped to ${CASUAL_30_DURATION}min:`,
         { requested: requestedEndTime, applied: endTime }
+      )
+    }
+
+    // 営業スケジュール上の妥当性を検証する。
+    // validateGuestBooking はフィールド単位の検証しか行わず、休業日・営業時間外・
+    // 休憩時間中・スロット境界外の予約がすべて通ってしまうため、ここで弾く。
+    const slotCheck = await validateBookingSlot({
+      startTime,
+      endTime,
+      durationMinutes: CASUAL_30_DURATION,
+    })
+    if (!slotCheck.valid) {
+      console.warn("[Guest Booking] Slot validation failed:", {
+        startTime,
+        code: slotCheck.code,
+      })
+      return NextResponse.json(
+        { error: slotCheck.errors.join(", ") },
+        { status: 400 }
       )
     }
 
