@@ -25,6 +25,9 @@ out/
 .next/
 *.tsbuildinfo
 
+# Vercel CLI (vercel link が作成するローカルのプロジェクト紐付け)
+.vercel
+
 # Logs
 *.log
 npm-debug.log*
