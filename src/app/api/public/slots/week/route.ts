@@ -11,6 +11,7 @@ import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar
 import { getCachedZoomBusyTimes } from "@/lib/integrations/zoom"
 import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
 import { isJapaneseHoliday } from "@/lib/utils/holidays"
+import { loadScheduleSet, pickSchedule, type ScheduleSet } from "@/lib/bookings/schedule"
 
 // RLSにより anon キーでは bookings が1件も見えず空き枠判定が常に「空き」になるため、
 // サーバー専用の service role クライアントで参照する（返すのは空き状況のみでPIIは含まない）
@@ -75,52 +76,19 @@ export async function GET(request: Request) {
       dates.push(`${year}-${month}-${day}`)
     }
 
-    // 全曜日のスケジュールを取得（平日パターン全曜日）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: weekdaySchedules, error: weekdayError } = await (supabase as any)
-      .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
-      .eq("is_holiday_pattern", false) as {
-        data: Array<{
-          day_of_week: number
-          start_time: string
-          end_time: string
-          is_holiday_pattern: boolean
-          break_start_time: string | null
-          break_end_time: string | null
-        }> | null
-        error: { message: string } | null
-      }
-
-    if (weekdayError) {
-      console.error("[GET /api/public/slots/week] Weekday schedule error:", weekdayError)
+    // スケジュールは共通モジュールから取得する。
+    // 予約作成時の検証 (src/lib/bookings/schedule.ts) と同じ関数を使うことで、
+    // 「一覧に出ているのに予約が拒否される」乖離を防ぐ。
+    let scheduleSet: ScheduleSet
+    try {
+      scheduleSet = await loadScheduleSet()
+    } catch (error) {
+      console.error("[GET /api/public/slots/week] Schedule error:", error)
       return NextResponse.json(
         { error: "スケジュール取得に失敗しました" },
         { status: 500 }
       )
     }
-
-    // 祝日パターンを取得（1行のみ）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: holidaySchedule, error: holidayError } = await (supabase as any)
-      .from("weekly_schedules")
-      .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
-      .eq("is_holiday_pattern", true)
-      .limit(1)
-      .single() as {
-        data: {
-          day_of_week: number
-          start_time: string
-          end_time: string
-          is_holiday_pattern: boolean
-          break_start_time: string | null
-          break_end_time: string | null
-        } | null
-        error: { message: string } | null
-      }
-
-    // 祝日スケジュールが見つからない場合はnullを許容
-    const holidayScheduleData = holidayError ? null : holidaySchedule
 
     // バッファ設定（予約取得の範囲計算に必要なので先に読む）
     const bufferBeforeMinutes = await getBufferBeforeMinutes()
@@ -196,29 +164,11 @@ export async function GET(request: Request) {
     const result: Record<string, Slot[]> = {}
 
     for (const date of dates) {
-      const targetDate = new Date(date)
-      const dayOfWeek = targetDate.getDay()
-
       // 祝日判定
       const isHoliday = await isJapaneseHoliday(date)
 
       // スケジュール取得：祝日の場合は曜日無関係、平日は該当曜日
-      let activeSchedule: {
-        day_of_week: number
-        start_time: string
-        end_time: string
-        is_holiday_pattern: boolean
-        break_start_time: string | null
-        break_end_time: string | null
-      } | null = null
-
-      if (isHoliday) {
-        // 祝日: 祝日パターンを使用（曜日無視）
-        activeSchedule = holidayScheduleData
-      } else {
-        // 平日: 該当曜日の平日パターンを使用
-        activeSchedule = weekdaySchedules?.find((s) => s.day_of_week === dayOfWeek) ?? null
-      }
+      const activeSchedule = pickSchedule(scheduleSet, date, isHoliday)
 
       if (!activeSchedule) {
         result[date] = []

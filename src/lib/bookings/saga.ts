@@ -22,10 +22,11 @@ import {
   deleteCalendarEvent,
   buildCalendarEventId,
 } from "../integrations/google-calendar"
+import { validateBookingSlot } from "./schedule"
+import { checkBookingConflict } from "./conflicts"
 import { sendBookingConfirmationEmail } from "../integrations/email"
 import { generateCancelToken } from "../tokens/cancel-token"
 import { retryWithExponentialBackoff } from "@/lib/utils/retry"
-import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 
 const MAX_RETRIES = 3
 const LOCK_CONFLICT_CODE = "55P03"
@@ -110,13 +111,62 @@ export async function createBookingSaga(
     context.pointsRequired = menu.points_required
     completedSteps.push("validate_menu")
 
+    // Step 1.5: 予約枠の妥当性検証（副作用の発生前なので補償は不要）
+    //
+    // end_time はクライアント値を信用せずメニューの duration から確定させる。
+    // そのまま通すと end=start+30日 のような予約でEXCLUDE制約が以降の全予約を
+    // 弾く。あわせて営業時間・休憩時間・スロット境界・最短予約時間も検証する。
+    // 以降のステップは request.end_time ではなく context.endTime を使う。
+    // new Date("abc").getTime() は NaN で、そのまま toISOString() すると
+    // RangeError になり validateBookingSlot の INVALID_TIME まで到達できない。
+    const startMs = new Date(context.startTime).getTime()
+    if (Number.isNaN(startMs)) {
+      return {
+        success: false,
+        error: "予約日時の形式が正しくありません",
+        errorCode: BookingErrorCodes.INVALID_SLOT,
+      }
+    }
+    context.endTime = new Date(
+      startMs + menu.duration_minutes * 60 * 1000
+    ).toISOString()
+
+    if (new Date(request.end_time).getTime() !== new Date(context.endTime).getTime()) {
+      console.warn("[Saga] end_time mismatch, using menu duration:", {
+        requested: request.end_time,
+        applied: context.endTime,
+        durationMinutes: menu.duration_minutes,
+      })
+    }
+
+    console.log("[Saga] Step 1.5: Validating booking slot")
+    const slotCheck = await validateBookingSlot({
+      startTime: context.startTime,
+      endTime: context.endTime,
+      durationMinutes: menu.duration_minutes,
+    })
+    if (!slotCheck.valid) {
+      console.warn("[Saga] Slot validation failed:", {
+        startTime: context.startTime,
+        code: slotCheck.code,
+      })
+      return {
+        success: false,
+        error: slotCheck.errors.join(", "),
+        errorCode: BookingErrorCodes.INVALID_SLOT,
+      }
+    }
+
     // Step 2: Check slot availability (using DB EXCLUDE constraint as backup)
     console.log("[Saga] Step 2: Checking slot availability")
-    const slotAvailable = await checkSlotAvailability(
+    const conflictCheck = await checkBookingConflict(
       context.startTime,
       context.endTime
     )
-    if (!slotAvailable) {
+    if (conflictCheck.status === "error") {
+      throw new Error(conflictCheck.message)
+    }
+    if (conflictCheck.status === "conflict") {
       return {
         success: false,
         error: "この時間帯は既に予約されています",
@@ -331,34 +381,6 @@ async function validateMenu(
     return null
   }
   return data
-}
-
-/**
- * Check if time slot is available
- *
- * RLSにより会員クライアントでは他人の予約が見えないため、
- * service role クライアントで全予約を対象にチェックする
- */
-async function checkSlotAvailability(
-  startTime: string,
-  endTime: string
-): Promise<boolean> {
-  // Check for overlapping confirmed bookings
-  // DB has EXCLUDE constraint as backup, but we check here first for better UX
-  const { data, error } = await getSupabaseServiceRole()
-    .from("bookings")
-    .select("id")
-    .neq("status", "canceled")
-    .lt("start_time", endTime)
-    .gt("end_time", startTime)
-    .limit(1)
-
-  if (error) {
-    console.error("[Saga] Slot availability check failed:", error)
-    throw error
-  }
-
-  return !data || data.length === 0
 }
 
 /**

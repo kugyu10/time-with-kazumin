@@ -69,6 +69,7 @@ export const BookingErrorCodes = {
   MENU_NOT_FOUND: "menu_not_found",
   MEMBER_PLAN_NOT_FOUND: "member_plan_not_found",
   LOCK_CONFLICT: "lock_conflict",
+  INVALID_SLOT: "invalid_slot",
   INTERNAL_ERROR: "internal_error",
 } as const
 

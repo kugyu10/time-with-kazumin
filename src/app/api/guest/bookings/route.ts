@@ -10,6 +10,8 @@ import { NextResponse } from "next/server"
 import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { checkGuestRateLimit } from "@/lib/rate-limit/guest-limiter"
 import { validateGuestBooking } from "@/lib/validation/guest"
+import { validateBookingSlot } from "@/lib/bookings/schedule"
+import { checkBookingConflict } from "@/lib/bookings/conflicts"
 import { generateCancelToken } from "@/lib/tokens/cancel-token"
 import { randomUUID } from "crypto"
 import { createZoomMeeting, deleteZoomMeeting } from "@/lib/integrations/zoom"
@@ -117,8 +119,17 @@ export async function POST(request: Request) {
     // 予約の終了時刻はクライアント値を信用せずサーバ側で確定させる。
     // endTime をそのまま通すと start + 30日 のような長大予約を未認証で作成でき、
     // no_overlapping_bookings EXCLUDE 制約が以降の全予約を弾くDoSになる。
+    // validator.isISO8601 は非strictで "2026-W01-1" のように Date がパースできない
+    // 形式も通すため、NaN のまま toISOString() すると RangeError → 500 になる。
+    const startMs = new Date(startTime).getTime()
+    if (Number.isNaN(startMs)) {
+      return NextResponse.json(
+        { error: "予約日時の形式が正しくありません" },
+        { status: 400 }
+      )
+    }
     const endTime = new Date(
-      new Date(startTime).getTime() + CASUAL_30_DURATION * 60 * 1000
+      startMs + CASUAL_30_DURATION * 60 * 1000
     ).toISOString()
 
     if (new Date(requestedEndTime).getTime() !== new Date(endTime).getTime()) {
@@ -128,30 +139,42 @@ export async function POST(request: Request) {
       )
     }
 
+    // 営業スケジュール上の妥当性を検証する。
+    // validateGuestBooking はフィールド単位の検証しか行わず、休業日・営業時間外・
+    // 休憩時間中・スロット境界外の予約がすべて通ってしまうため、ここで弾く。
+    const slotCheck = await validateBookingSlot({
+      startTime,
+      endTime,
+      durationMinutes: CASUAL_30_DURATION,
+    })
+    if (!slotCheck.valid) {
+      console.warn("[Guest Booking] Slot validation failed:", {
+        startTime,
+        code: slotCheck.code,
+      })
+      return NextResponse.json(
+        { error: slotCheck.errors.join(", ") },
+        { status: 400 }
+      )
+    }
+
     const supabase = getSupabaseServiceRole()
     const normalizedEmail = email.toLowerCase().trim()
     const trimmedName = name.trim()
 
-    // Step 0: DB上の予約重複を事前チェック
-    // Zoom/カレンダーなど外部リソースを作る前に弾く（最終防衛線はEXCLUDE制約）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: conflicting, error: conflictError } = await (supabase as any)
-      .from("bookings")
-      .select("id")
-      .neq("status", "canceled")
-      .lt("start_time", endTime)
-      .gt("end_time", startTime)
-      .limit(1) as { data: Array<{ id: number }> | null; error: { message: string } | null }
+    // Step 0: DB上の予約重複を事前チェック（バッファ適用）
+    // Zoom/カレンダーなど外部リソースを作る前に弾く。
+    // EXCLUDE制約はバッファを知らないため、バッファ分の重なりはここでしか止まらない。
+    const conflictCheck = await checkBookingConflict(startTime, endTime)
 
-    if (conflictError) {
-      console.error("[Guest Booking] Conflict pre-check failed:", conflictError)
+    if (conflictCheck.status === "error") {
       return NextResponse.json(
         { error: "予約状況の確認に失敗しました" },
         { status: 500 }
       )
     }
 
-    if (conflicting && conflicting.length > 0) {
+    if (conflictCheck.status === "conflict") {
       return NextResponse.json(
         { error: "この時間帯は既に予約されています" },
         { status: 409 }
