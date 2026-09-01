@@ -11,7 +11,7 @@ import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { getCachedBusyTimes, BusyTime } from "@/lib/integrations/google-calendar"
 import { getCachedZoomBusyTimes } from "@/lib/integrations/zoom"
 import { getBookingMinHoursAhead, getBufferBeforeMinutes, getBufferAfterMinutes } from "@/lib/settings/app-settings"
-import { isJapaneseHoliday } from "@/lib/utils/holidays"
+import { resolveActiveSchedule } from "@/lib/bookings/schedule"
 
 // RLSにより anon キーでは bookings が1件も見えず空き枠判定が常に「空き」になるため、
 // サーバー専用の service role クライアントで参照する（返すのは空き状況のみでPIIは含まない）
@@ -63,76 +63,10 @@ export async function GET(request: Request) {
       )
     }
 
-    // 日付から曜日を取得
-    const targetDate = new Date(date)
-    const dayOfWeek = targetDate.getDay()
-
-    // 祝日判定
-    const isHoliday = await isJapaneseHoliday(date)
-
-    // スケジュール取得：祝日の場合は曜日を無視
-    let activeSchedule: {
-      day_of_week: number
-      start_time: string
-      end_time: string
-      is_holiday_pattern: boolean
-      break_start_time: string | null
-      break_end_time: string | null
-    } | null = null
-
-    if (isHoliday) {
-      // 祝日: is_holiday_pattern=true の最初の1行を使用（曜日無視）
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: holidaySchedule, error: scheduleError } = await (supabase as any)
-        .from("weekly_schedules")
-        .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
-        .eq("is_holiday_pattern", true)
-        .limit(1)
-        .single() as {
-          data: {
-            day_of_week: number
-            start_time: string
-            end_time: string
-            is_holiday_pattern: boolean
-            break_start_time: string | null
-            break_end_time: string | null
-          } | null
-          error: { message: string } | null
-        }
-
-      if (scheduleError) {
-        // 祝日パターンが見つからない場合はスルー（activeSchedule = null）
-        console.warn("[GET /api/public/slots] Holiday schedule not found:", scheduleError)
-      } else {
-        activeSchedule = holidaySchedule
-      }
-    } else {
-      // 平日: 該当曜日のis_holiday_pattern=falseを使用
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: weekdaySchedule, error: scheduleError } = await (supabase as any)
-        .from("weekly_schedules")
-        .select("day_of_week, start_time, end_time, is_holiday_pattern, break_start_time, break_end_time")
-        .eq("day_of_week", dayOfWeek)
-        .eq("is_holiday_pattern", false)
-        .limit(1)
-        .single() as {
-          data: {
-            day_of_week: number
-            start_time: string
-            end_time: string
-            is_holiday_pattern: boolean
-            break_start_time: string | null
-            break_end_time: string | null
-          } | null
-          error: { message: string } | null
-        }
-
-      if (scheduleError) {
-        console.warn("[GET /api/public/slots] Weekday schedule not found:", scheduleError)
-      } else {
-        activeSchedule = weekdaySchedule
-      }
-    }
+    // 曜日判定・祝日判定・スケジュール選択は schedule モジュールに委譲する。
+    // ここで new Date(date).getDay() を使うとサーバのTZ次第で前日の曜日になり、
+    // 書き込み側の validateBookingSlot が拒否する枠を提示してしまう。
+    const activeSchedule = await resolveActiveSchedule(date)
 
     // スケジュールがない場合は空配列を返す
     if (!activeSchedule) {

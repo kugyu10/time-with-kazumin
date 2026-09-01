@@ -117,8 +117,18 @@ export async function createBookingSaga(
     // そのまま通すと end=start+30日 のような予約でEXCLUDE制約が以降の全予約を
     // 弾く。あわせて営業時間・休憩時間・スロット境界・最短予約時間も検証する。
     // 以降のステップは request.end_time ではなく context.endTime を使う。
+    // new Date("abc").getTime() は NaN で、そのまま toISOString() すると
+    // RangeError になり validateBookingSlot の INVALID_TIME まで到達できない。
+    const startMs = new Date(context.startTime).getTime()
+    if (Number.isNaN(startMs)) {
+      return {
+        success: false,
+        error: "予約日時の形式が正しくありません",
+        errorCode: BookingErrorCodes.INVALID_SLOT,
+      }
+    }
     context.endTime = new Date(
-      new Date(context.startTime).getTime() + menu.duration_minutes * 60 * 1000
+      startMs + menu.duration_minutes * 60 * 1000
     ).toISOString()
 
     if (new Date(request.end_time).getTime() !== new Date(context.endTime).getTime()) {

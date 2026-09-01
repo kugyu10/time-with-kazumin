@@ -118,8 +118,17 @@ export async function POST(request: Request) {
     // 予約の終了時刻はクライアント値を信用せずサーバ側で確定させる。
     // endTime をそのまま通すと start + 30日 のような長大予約を未認証で作成でき、
     // no_overlapping_bookings EXCLUDE 制約が以降の全予約を弾くDoSになる。
+    // validator.isISO8601 は非strictで "2026-W01-1" のように Date がパースできない
+    // 形式も通すため、NaN のまま toISOString() すると RangeError → 500 になる。
+    const startMs = new Date(startTime).getTime()
+    if (Number.isNaN(startMs)) {
+      return NextResponse.json(
+        { error: "予約日時の形式が正しくありません" },
+        { status: 400 }
+      )
+    }
     const endTime = new Date(
-      new Date(startTime).getTime() + CASUAL_30_DURATION * 60 * 1000
+      startMs + CASUAL_30_DURATION * 60 * 1000
     ).toISOString()
 
     if (new Date(requestedEndTime).getTime() !== new Date(endTime).getTime()) {

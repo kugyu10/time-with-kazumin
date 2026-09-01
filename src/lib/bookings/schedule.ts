@@ -182,6 +182,17 @@ export async function validateBookingSlot(input: {
     }
   }
 
+  // 秒・ミリ秒を含む開始時刻を拒否する。
+  // toJstParts は分までしか見ないため 10:30:45 のような値は30分境界チェックを
+  // すり抜け、グリッド外の予約がEXCLUDE制約で前後2スロットを塞いでしまう。
+  if (startMs % 60_000 !== 0) {
+    return {
+      valid: false,
+      errors: ["予約枠の開始時刻が正しくありません"],
+      code: SlotValidationCodes.INVALID_SLOT,
+    }
+  }
+
   // 予約時間はメニューの規定どおりであること。
   // ここを緩めると end=start+30日 のような予約でEXCLUDE制約が
   // 以降の全予約を弾く（未認証DoS）。

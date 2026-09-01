@@ -266,8 +266,11 @@ describe("validateBookingSlot()", () => {
   })
 
   it("Test 8: 最短予約時間内は拒否", async () => {
-    // 1時間後（既定は24時間後以降）
-    const start = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    // 1時間後（既定は24時間後以降）。秒・ミリ秒を落として分境界に揃える
+    // （揃えないと秒を持つ開始時刻として INVALID_SLOT で先に弾かれる）
+    const start = new Date(
+      Math.floor((Date.now() + 60 * 60 * 1000) / 60_000) * 60_000
+    ).toISOString()
     setWeekdaySchedule(start)
 
     const result = await validateBookingSlot({
@@ -277,6 +280,21 @@ describe("validateBookingSlot()", () => {
 
     expect(result.valid).toBe(false)
     expect(result.code).toBe(SlotValidationCodes.TOO_SOON)
+  })
+
+  it("Test 8.5: 秒を含む開始時刻は拒否（30分境界の回避を防ぐ）", async () => {
+    // 10:30:45 は分だけ見ると10:30と同じで境界チェックを通過してしまう。
+    // 通すと 10:30:45-11:00:45 の予約が10:30と11:00の両枠をEXCLUDE制約で塞ぐ。
+    const start = jstAt(3, "10:30").replace(":00.000Z", ":45.000Z")
+    setWeekdaySchedule(start)
+
+    const result = await validateBookingSlot({
+      startTime: start,
+      endTime: plusMinutes(start, 30),
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.code).toBe(SlotValidationCodes.INVALID_SLOT)
   })
 
   it("Test 9: 祝日は曜日ではなく祝日パターンで判定される", async () => {
