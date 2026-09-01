@@ -11,6 +11,7 @@ import { getSupabaseServiceRole } from "@/lib/supabase/service-role"
 import { checkGuestRateLimit } from "@/lib/rate-limit/guest-limiter"
 import { validateGuestBooking } from "@/lib/validation/guest"
 import { validateBookingSlot } from "@/lib/bookings/schedule"
+import { checkBookingConflict } from "@/lib/bookings/conflicts"
 import { generateCancelToken } from "@/lib/tokens/cancel-token"
 import { randomUUID } from "crypto"
 import { createZoomMeeting, deleteZoomMeeting } from "@/lib/integrations/zoom"
@@ -161,26 +162,19 @@ export async function POST(request: Request) {
     const normalizedEmail = email.toLowerCase().trim()
     const trimmedName = name.trim()
 
-    // Step 0: DB上の予約重複を事前チェック
-    // Zoom/カレンダーなど外部リソースを作る前に弾く（最終防衛線はEXCLUDE制約）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: conflicting, error: conflictError } = await (supabase as any)
-      .from("bookings")
-      .select("id")
-      .neq("status", "canceled")
-      .lt("start_time", endTime)
-      .gt("end_time", startTime)
-      .limit(1) as { data: Array<{ id: number }> | null; error: { message: string } | null }
+    // Step 0: DB上の予約重複を事前チェック（バッファ適用）
+    // Zoom/カレンダーなど外部リソースを作る前に弾く。
+    // EXCLUDE制約はバッファを知らないため、バッファ分の重なりはここでしか止まらない。
+    const conflictCheck = await checkBookingConflict(startTime, endTime)
 
-    if (conflictError) {
-      console.error("[Guest Booking] Conflict pre-check failed:", conflictError)
+    if (conflictCheck.status === "error") {
       return NextResponse.json(
         { error: "予約状況の確認に失敗しました" },
         { status: 500 }
       )
     }
 
-    if (conflicting && conflicting.length > 0) {
+    if (conflictCheck.status === "conflict") {
       return NextResponse.json(
         { error: "この時間帯は既に予約されています" },
         { status: 409 }
